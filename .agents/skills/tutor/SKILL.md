@@ -10,10 +10,10 @@ Guide the learner through supplied lesson material in small, confirmed steps. Re
 ## Load the lesson
 
 1. Accept one local file path or web address as the lesson source.
-2. For a web address, download the source to a temporary file. Weekly AMAT5315 PDFs are available under `https://giggleliu.github.io/AMAT5315-2026Fall/pdfs/`.
+2. For a web address, download the source to one temporary file. Prefer Python's `tempfile.NamedTemporaryFile` context manager so cleanup happens automatically. Do not create a temporary directory or use recursive deletion. Weekly AMAT5315 PDFs are available under `https://giggleliu.github.io/AMAT5315-2026Fall/pdfs/`.
 3. For a PDF, extract its text with the installed `pypdf` package before tutoring. For a text file, read it directly.
 4. If the source cannot be opened or parsed, state the specific problem and stop. Do not invent missing lesson content.
-5. Remove temporary downloads after extracting the lesson.
+5. Remove only the exact temporary download after extracting the lesson. Never use `rm -rf` for cleanup.
 
 ## Tutor step by step
 
