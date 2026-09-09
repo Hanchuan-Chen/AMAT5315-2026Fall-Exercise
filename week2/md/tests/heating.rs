@@ -38,10 +38,7 @@ fn heated_samples_follow_target_and_record_ramp() {
 
     let temp = tempfile::tempdir().unwrap();
     write_artifacts(temp.path(), &artifacts).unwrap();
-    let run: Value = serde_json::from_str(
-        &fs::read_to_string(temp.path().join("run.json")).unwrap(),
-    )
-    .unwrap();
+    let run: Value =
+        serde_json::from_str(&fs::read_to_string(temp.path().join("run.json")).unwrap()).unwrap();
     assert_eq!(run["ramp_to"], 0.6);
 }
-

@@ -33,8 +33,7 @@ fn cells_match_naive_on_perturbed_lattice() {
     let mut lattice = triangular_lattice(100, 0.8).unwrap();
     for (index, position) in lattice.positions.iter_mut().enumerate() {
         position[0] = (position[0] + 0.013 * (index as f64).sin()).rem_euclid(lattice.box_size[0]);
-        position[1] =
-            (position[1] + 0.011 * (index as f64).cos()).rem_euclid(lattice.box_size[1]);
+        position[1] = (position[1] + 0.011 * (index as f64).cos()).rem_euclid(lattice.box_size[1]);
     }
     compare_methods(lattice.positions, lattice.box_size, 2.5);
 }
@@ -50,4 +49,3 @@ fn cells_match_naive_for_boundary_cutoff_and_two_cell_box() {
     ];
     compare_methods(positions, [5.2, 5.2], 2.5);
 }
-
