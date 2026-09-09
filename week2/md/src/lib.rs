@@ -1,3 +1,5 @@
+pub mod artifacts;
+pub mod fluid;
 pub mod physics;
 pub mod simulation;
 
