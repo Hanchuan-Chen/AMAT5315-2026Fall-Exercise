@@ -1,6 +1,8 @@
 /// Lennard-Jones pair energy in reduced units.
-pub fn energy(_r: f64) -> f64 {
-    todo!("implement the Lennard-Jones pair energy")
+pub fn energy(r: f64) -> f64 {
+    assert!(r.is_finite() && r > 0.0, "separation must be positive");
+    let inv_r6 = r.powi(-6);
+    4.0 * (inv_r6 * inv_r6 - inv_r6)
 }
 
 /// Radial Lennard-Jones pair force in reduced units.
