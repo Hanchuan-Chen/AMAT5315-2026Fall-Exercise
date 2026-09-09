@@ -1,0 +1,41 @@
+use md::simulation::{run_dimer, Euler, System, VelocityVerlet};
+
+const DT: f64 = 0.01;
+
+fn max_abs(values: &[f64]) -> f64 {
+    values.iter().map(|value| value.abs()).fold(0.0, f64::max)
+}
+
+#[test]
+fn dimer_accelerations_are_equal_opposite_and_attractive() {
+    let system = System::new(
+        vec![[0.0, 0.0], [1.2, 0.0]],
+        vec![[0.0, 0.0], [0.0, 0.0]],
+    );
+    let acceleration = system.accelerations();
+
+    assert!(acceleration[0][0] > 0.0);
+    assert!(acceleration[1][0] < 0.0);
+    for axis in 0..2 {
+        assert!((acceleration[0][axis] + acceleration[1][axis]).abs() < 1.0e-12);
+    }
+}
+
+#[test]
+fn same_dimer_run_distinguishes_euler_from_verlet() {
+    let euler = run_dimer(&Euler, 500, DT);
+    let verlet = run_dimer(&VelocityVerlet, 500, DT);
+
+    assert_eq!(euler.times().len(), 500);
+    assert_eq!(verlet.times().len(), 500);
+    assert!(max_abs(verlet.relative_errors()) < 1.0e-3);
+    assert!(*euler.relative_errors().last().unwrap() > 0.5);
+}
+
+#[test]
+fn verlet_error_stays_bounded_for_ten_times_longer() {
+    let trace = run_dimer(&VelocityVerlet, 5000, DT);
+
+    assert_eq!(trace.times().len(), 5000);
+    assert!(max_abs(trace.relative_errors()) < 1.0e-3);
+}
