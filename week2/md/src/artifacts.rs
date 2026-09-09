@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -179,20 +179,26 @@ pub fn write_artifacts(directory: &Path, artifacts: &RunArtifacts) -> Result<(),
     let mut trajectory_temp =
         NamedTempFile::new_in(directory).map_err(|source| io_error(&trajectory_path, source))?;
 
-    serde_json::to_writer_pretty(&mut run_temp, &artifacts.run)
-        .map_err(|source| json_error(&run_path, source))?;
-    writeln!(run_temp).map_err(|source| io_error(&run_path, source))?;
-    for frame in &artifacts.frames {
-        serde_json::to_writer(&mut trajectory_temp, frame)
-            .map_err(|source| json_error(&trajectory_path, source))?;
-        writeln!(trajectory_temp).map_err(|source| io_error(&trajectory_path, source))?;
+    {
+        let mut writer = BufWriter::new(run_temp.as_file_mut());
+        serde_json::to_writer_pretty(&mut writer, &artifacts.run)
+            .map_err(|source| json_error(&run_path, source))?;
+        writeln!(writer).map_err(|source| io_error(&run_path, source))?;
+        writer
+            .flush()
+            .map_err(|source| io_error(&run_path, source))?;
     }
-    run_temp
-        .flush()
-        .map_err(|source| io_error(&run_path, source))?;
-    trajectory_temp
-        .flush()
-        .map_err(|source| io_error(&trajectory_path, source))?;
+    {
+        let mut writer = BufWriter::new(trajectory_temp.as_file_mut());
+        for frame in &artifacts.frames {
+            serde_json::to_writer(&mut writer, frame)
+                .map_err(|source| json_error(&trajectory_path, source))?;
+            writeln!(writer).map_err(|source| io_error(&trajectory_path, source))?;
+        }
+        writer
+            .flush()
+            .map_err(|source| io_error(&trajectory_path, source))?;
+    }
     run_temp
         .as_file()
         .sync_all()
