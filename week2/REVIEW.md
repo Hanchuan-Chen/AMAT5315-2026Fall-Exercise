@@ -29,11 +29,30 @@ plans in `docs/superpowers/` and with the learning-sheet acceptance checks.
    Commit `9a4c81a` made the fixture valid so the test reaches and checks the
    dimension error.
 
-5. **No unresolved code or evidence finding.** Naive and cells share the exact
-   pair physics and agree in the boundary, cutoff, perturbed-lattice, and
-   two-cell tests. Heating is isolated from the NVE run. Timing/profile claims
-   match the recorded tables and images; both videos and the page data match
-   their documented configurations.
+5. **Fixed — periodic-boundary and cutoff assertions were too weak.** The
+   original boundary case only asserted a force direction that could also occur
+   without minimum-image wrapping, and the just-inside-cutoff assertion allowed
+   an incorrectly early zero cutoff to pass. Commit `4d20219` now compares the
+   cross-boundary force with the analytic force at the known minimum-image
+   separation and compares the just-inside energy with the shifted
+   Lennard-Jones value. The existing perturbed-lattice and two-cell equality
+   tests remain in place.
+
+6. **Not fixed — the required two-minute screen recording and GitHub release
+   link are missing.** No recording file or release URL is present in the
+   repository, and the README has no recording link. The learning sheet
+   requires the student to make the recording in one take, narrate the cold and
+   hot `g(r)` views, attach it to a GitHub release rather than Git, and add that
+   release URL beside the Pages link. This requires the student's screen,
+   voice, and authenticated GitHub release action, so it cannot be completed by
+   this reviewer.
+
+7. **No other unresolved code, physics, artifact, media, or performance
+   finding.** Naive and cells share the exact pair physics and agree in the
+   strengthened boundary/cutoff checks plus perturbed-lattice and two-cell
+   tests. Heating is isolated from the NVE run. Timing/profile claims match the
+   recorded tables and screenshots; all three videos and the deployed page data
+   match their documented configurations.
 
 ## Verification after fixes
 
@@ -49,6 +68,28 @@ Verification was run from a new local clone at commit `6666c54`:
 - The local HTTP page loads 400 atoms and 200 frames; long-range contrast falls
   from `0.354` to `0.096`, while the temperature trace reaches `1.197`.
 
-The course sheet separately asks for a fresh-agent review. This file records
-the completed inline review; an independent fresh session should confirm or
-amend these findings before the final push.
+## Independent fresh-agent re-verification
+
+An independent fresh session re-read the 20-page learning sheet, all three
+designs and plans, and the Week 2 source/tests without relying on the earlier
+review. It then verified commit `4d20219` as follows:
+
+- `cargo test --manifest-path week2/md/Cargo.toml --release`: all 22
+  non-ignored tests passed; the external-video test remains intentionally
+  ignored in the default suite.
+- `cargo clippy --manifest-path week2/md/Cargo.toml --all-targets
+  --all-features -- -D warnings`: passed with no warnings.
+- `make reproduce` and the Rust checker: PASS; energy consistency `9.828e-16`,
+  secular drift `5.521e-4`, temperature `0.5136`, and chi2/dof `1.119`.
+- Supplied checker: PASS; energy consistency `7.381e-16` and the same drift,
+  temperature, and speed-shape values.
+- The deployed page returned HTTP 200 without authentication. Its viewer,
+  `run.json`, and `traj.jsonl` exactly match the tracked files; metadata reports
+  400 atoms, 20000 steps, sampling every 100 steps (200 frames), and a 0.2 to
+  1.2 ramp.
+- `fluid.mp4`, `cold.mp4`, and `hot.mp4` each decoded through all 200 frames,
+  are 960x480 yuv420p at 20 fps, and are below 2 MB. Visual inspection confirms
+  the documented ordered cold and flattened-tail hot `g(r)` behavior.
+- Required paths are tracked, generated `week2/artifacts/` remains ignored,
+  and a tracked-file scan found no student number, credential, token, identity
+  document, or private note.
