@@ -16,6 +16,7 @@ fn sample() -> RunArtifacts {
             sample_every: 5,
             seed: 7,
             integrator: "velocity-verlet".into(),
+            ramp_to: None,
         },
         frames: vec![Frame {
             step: 5,

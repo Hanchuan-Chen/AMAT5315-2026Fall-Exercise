@@ -3,7 +3,7 @@ use rand_chacha::ChaCha8Rng;
 use rand_distr::StandardNormal;
 
 use crate::artifacts::{Frame, RunArtifacts, RunMetadata};
-use crate::simulation::{Integrator, System, SystemError, VelocityVerlet};
+use crate::simulation::{ForceMethod, Integrator, System, SystemError, VelocityVerlet};
 
 pub const CUTOFF: f64 = 2.5;
 pub const THERMOSTAT_EVERY: usize = 50;
@@ -18,6 +18,8 @@ pub struct RunConfig {
     pub steps: usize,
     pub sample_every: usize,
     pub seed: u64,
+    pub force: ForceMethod,
+    pub ramp_to: Option<f64>,
 }
 
 impl Default for RunConfig {
@@ -31,6 +33,8 @@ impl Default for RunConfig {
             steps: 10_000,
             sample_every: 50,
             seed: 2026,
+            force: ForceMethod::Cells,
+            ramp_to: None,
         }
     }
 }
@@ -46,6 +50,14 @@ impl RunConfig {
         if !self.temperature.is_finite() || self.temperature <= 0.0 {
             return Err(FluidError::Configuration(
                 "temperature must be finite and positive".into(),
+            ));
+        }
+        if self
+            .ramp_to
+            .is_some_and(|temperature| !temperature.is_finite() || temperature <= 0.0)
+        {
+            return Err(FluidError::Configuration(
+                "ramp_to must be finite and positive".into(),
             ));
         }
         if !self.dt.is_finite() || self.dt <= 0.0 {
@@ -181,7 +193,13 @@ pub fn simulate(config: &RunConfig) -> Result<RunArtifacts, FluidError> {
     let lattice = triangular_lattice(config.n, config.rho)?;
     let velocities = initial_velocities(config.n, config.temperature, config.seed)?;
     let box_size = lattice.box_size;
-    let mut system = System::new_periodic(lattice.positions, velocities, box_size, CUTOFF)?;
+    let mut system = System::new_periodic_with_method(
+        lattice.positions,
+        velocities,
+        box_size,
+        CUTOFF,
+        config.force,
+    )?;
 
     for step in 1..=config.eq_steps {
         VelocityVerlet.step(&mut system, config.dt);
@@ -195,6 +213,17 @@ pub fn simulate(config: &RunConfig) -> Result<RunArtifacts, FluidError> {
     let mut frames = Vec::with_capacity(config.steps / config.sample_every);
     for step in 1..=config.steps {
         VelocityVerlet.step(&mut system, config.dt);
+        if let Some(final_temperature) = config.ramp_to
+            && step % THERMOSTAT_EVERY == 0
+        {
+            system.remove_center_of_mass_velocity();
+            system.rescale_temperature(production_target_temperature(
+                config.temperature,
+                final_temperature,
+                step,
+                config.steps,
+            ))?;
+        }
         if step % config.sample_every == 0 {
             frames.push(Frame {
                 step,
@@ -219,7 +248,12 @@ pub fn simulate(config: &RunConfig) -> Result<RunArtifacts, FluidError> {
             sample_every: config.sample_every,
             seed: config.seed,
             integrator: "velocity-verlet".into(),
+            ramp_to: config.ramp_to,
         },
         frames,
     })
+}
+
+pub fn production_target_temperature(start: f64, end: f64, step: usize, steps: usize) -> f64 {
+    start + (end - start) * step as f64 / steps as f64
 }

@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 use md::analysis::{CheckError, check_run};
 use md::artifacts::{read_artifacts, write_artifacts};
 use md::fluid::{RunConfig, simulate};
+use md::simulation::ForceMethod;
 use md::video::render_video;
 
 #[derive(Parser)]
@@ -36,6 +37,10 @@ enum Command {
         sample_every: usize,
         #[arg(long, default_value_t = 2026)]
         seed: u64,
+        #[arg(long, value_enum, default_value_t = ForceMethod::Cells)]
+        force: ForceMethod,
+        #[arg(long)]
+        ramp_to: Option<f64>,
         #[arg(long, default_value = "artifacts")]
         out: PathBuf,
     },
@@ -65,6 +70,8 @@ fn execute(command: Command) -> Result<(), CliFailure> {
             steps,
             sample_every,
             seed,
+            force,
+            ramp_to,
             out,
         } => {
             let config = RunConfig {
@@ -76,6 +83,8 @@ fn execute(command: Command) -> Result<(), CliFailure> {
                 steps,
                 sample_every,
                 seed,
+                force,
+                ramp_to,
             };
             let artifacts = simulate(&config).map_err(|error| CliFailure {
                 code: 2,

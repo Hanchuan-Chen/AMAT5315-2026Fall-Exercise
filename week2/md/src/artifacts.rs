@@ -19,6 +19,8 @@ pub struct RunMetadata {
     pub sample_every: usize,
     pub seed: u64,
     pub integrator: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ramp_to: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -88,6 +90,11 @@ pub fn validate_artifacts(artifacts: &RunArtifacts) -> Result<(), ArtifactError>
     if !finite_positive(run.rho) || !finite_positive(run.dt) || !finite_positive(run.temperature) {
         return Err(ArtifactError::Contract(
             "run.json rho, dt, and temperature must be finite and positive".into(),
+        ));
+    }
+    if run.ramp_to.is_some_and(|value| !finite_positive(value)) {
+        return Err(ArtifactError::Contract(
+            "run.json ramp_to must be finite and positive".into(),
         ));
     }
     if run.box_size.iter().any(|side| !finite_positive(*side)) {

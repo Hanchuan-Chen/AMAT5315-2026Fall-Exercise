@@ -1,9 +1,19 @@
 use crate::physics::{energy, force};
 
+#[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ForceMethod {
+    Naive,
+    Cells,
+}
+
 #[derive(Clone, Copy, Debug)]
 enum InteractionModel {
     PlainOpen,
-    PeriodicShifted { box_size: [f64; 2], cutoff: f64 },
+    PeriodicShifted {
+        box_size: [f64; 2],
+        cutoff: f64,
+        force_method: ForceMethod,
+    },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -53,10 +63,20 @@ impl System {
     }
 
     pub fn new_periodic(
+        positions: Vec<[f64; 2]>,
+        velocities: Vec<[f64; 2]>,
+        box_size: [f64; 2],
+        cutoff: f64,
+    ) -> Result<Self, SystemError> {
+        Self::new_periodic_with_method(positions, velocities, box_size, cutoff, ForceMethod::Cells)
+    }
+
+    pub fn new_periodic_with_method(
         mut positions: Vec<[f64; 2]>,
         velocities: Vec<[f64; 2]>,
         box_size: [f64; 2],
         cutoff: f64,
+        force_method: ForceMethod,
     ) -> Result<Self, SystemError> {
         if positions.is_empty() {
             return Err(SystemError::Empty);
@@ -87,7 +107,11 @@ impl System {
                 position[axis] = position[axis].rem_euclid(box_size[axis]);
             }
         }
-        let interaction = InteractionModel::PeriodicShifted { box_size, cutoff };
+        let interaction = InteractionModel::PeriodicShifted {
+            box_size,
+            cutoff,
+            force_method,
+        };
         let accelerations = accelerations(&positions, interaction);
         Ok(Self {
             positions,
@@ -129,22 +153,20 @@ impl System {
                 }
                 potential
             }
-            InteractionModel::PeriodicShifted { box_size, cutoff } => {
+            InteractionModel::PeriodicShifted {
+                box_size,
+                cutoff,
+                force_method,
+            } => {
                 let shift = energy(cutoff);
-                let cutoff_squared = cutoff * cutoff;
                 let mut potential = 0.0;
-                for i in 0..self.positions.len() {
-                    for j in (i + 1)..self.positions.len() {
-                        let dx =
-                            minimum_image(self.positions[i][0] - self.positions[j][0], box_size[0]);
-                        let dy =
-                            minimum_image(self.positions[i][1] - self.positions[j][1], box_size[1]);
-                        let distance_squared = dx * dx + dy * dy;
-                        if distance_squared < cutoff_squared {
-                            potential += energy(distance_squared.sqrt()) - shift;
-                        }
-                    }
-                }
+                for_each_periodic_pair(
+                    &self.positions,
+                    box_size,
+                    cutoff,
+                    force_method,
+                    |_, _, dx, dy| potential += energy(dx.hypot(dy)) - shift,
+                );
                 potential
             }
         }
@@ -225,19 +247,86 @@ fn accelerations(positions: &[[f64; 2]], interaction: InteractionModel) -> Vec<[
             }
             result
         }
-        InteractionModel::PeriodicShifted { box_size, cutoff } => {
+        InteractionModel::PeriodicShifted {
+            box_size,
+            cutoff,
+            force_method,
+        } => {
             let mut result = vec![[0.0, 0.0]; positions.len()];
-            let cutoff_squared = cutoff * cutoff;
+            for_each_periodic_pair(positions, box_size, cutoff, force_method, |i, j, dx, dy| {
+                add_pair_acceleration(&mut result, i, j, dx, dy)
+            });
+            result
+        }
+    }
+}
+
+fn for_each_periodic_pair(
+    positions: &[[f64; 2]],
+    box_size: [f64; 2],
+    cutoff: f64,
+    force_method: ForceMethod,
+    mut visit: impl FnMut(usize, usize, f64, f64),
+) {
+    let cutoff_squared = cutoff * cutoff;
+    let mut consider = |i: usize, j: usize| {
+        let dx = minimum_image(positions[i][0] - positions[j][0], box_size[0]);
+        let dy = minimum_image(positions[i][1] - positions[j][1], box_size[1]);
+        if dx * dx + dy * dy < cutoff_squared {
+            visit(i, j, dx, dy);
+        }
+    };
+
+    match force_method {
+        ForceMethod::Naive => {
             for i in 0..positions.len() {
                 for j in (i + 1)..positions.len() {
-                    let dx = minimum_image(positions[i][0] - positions[j][0], box_size[0]);
-                    let dy = minimum_image(positions[i][1] - positions[j][1], box_size[1]);
-                    if dx * dx + dy * dy < cutoff_squared {
-                        add_pair_acceleration(&mut result, i, j, dx, dy);
+                    consider(i, j);
+                }
+            }
+        }
+        ForceMethod::Cells => {
+            let cell_counts = [
+                (box_size[0] / cutoff).floor() as usize,
+                (box_size[1] / cutoff).floor() as usize,
+            ];
+            let cell_widths = [
+                box_size[0] / cell_counts[0] as f64,
+                box_size[1] / cell_counts[1] as f64,
+            ];
+            let mut atom_cells = Vec::with_capacity(positions.len());
+            let mut bins = vec![Vec::new(); cell_counts[0] * cell_counts[1]];
+            for (atom, position) in positions.iter().enumerate() {
+                let cell = [
+                    ((position[0] / cell_widths[0]).floor() as usize).min(cell_counts[0] - 1),
+                    ((position[1] / cell_widths[1]).floor() as usize).min(cell_counts[1] - 1),
+                ];
+                atom_cells.push(cell);
+                bins[cell[1] * cell_counts[0] + cell[0]].push(atom);
+            }
+
+            for (i, cell) in atom_cells.iter().enumerate() {
+                let mut neighbor_ids = Vec::with_capacity(9);
+                for offset_y in -1..=1 {
+                    for offset_x in -1..=1 {
+                        let x = (cell[0] as isize + offset_x).rem_euclid(cell_counts[0] as isize)
+                            as usize;
+                        let y = (cell[1] as isize + offset_y).rem_euclid(cell_counts[1] as isize)
+                            as usize;
+                        let id = y * cell_counts[0] + x;
+                        if !neighbor_ids.contains(&id) {
+                            neighbor_ids.push(id);
+                        }
+                    }
+                }
+                for id in neighbor_ids {
+                    for &j in &bins[id] {
+                        if j > i {
+                            consider(i, j);
+                        }
                     }
                 }
             }
-            result
         }
     }
 }
