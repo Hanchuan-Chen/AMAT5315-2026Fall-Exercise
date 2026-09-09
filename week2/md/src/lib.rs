@@ -1,4 +1,5 @@
 pub mod physics;
+pub mod simulation;
 
 /// Return the greeting printed by the `md` executable.
 pub fn greeting() -> &'static str {
