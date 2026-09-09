@@ -70,12 +70,11 @@ fn exact_schema_round_trips() {
 fn malformed_frame_dimensions_are_rejected_without_panic() {
     let temp = tempfile::tempdir().unwrap();
     write_artifacts(temp.path(), &sample()).unwrap();
-    let malformed = r#"{"step":5,"t":0.05,"pos":[[0.0,0.0]],
-        "vel":[[0.0,0.0],[0.0,0.0]],"E_pot":0.0,"E_kin":0.0}"#;
+    let malformed = r#"{"step":5,"t":0.05,"pos":[[0.0,0.0]],"vel":[[0.0,0.0],[0.0,0.0]],"E_pot":0.0,"E_kin":0.0}"#;
     fs::write(temp.path().join("traj.jsonl"), malformed).unwrap();
 
     let message = read_artifacts(temp.path()).unwrap_err().to_string();
 
-    assert!(message.contains("frame 0"));
-    assert!(message.contains("n = 2"));
+    assert!(message.contains("frame 0"), "{message}");
+    assert!(message.contains("n = 2"), "{message}");
 }
