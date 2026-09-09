@@ -14,8 +14,8 @@ fn periodic_pair_force_is_equal_and_opposite_across_boundary() {
     let acceleration = system.accelerations();
 
     assert!(acceleration[0][0] > 0.0);
-    for axis in 0..2 {
-        assert!((acceleration[0][axis] + acceleration[1][axis]).abs() < 1.0e-12);
+    for (first, second) in acceleration[0].iter().zip(&acceleration[1]) {
+        assert!((first + second).abs() < 1.0e-12);
     }
 }
 
