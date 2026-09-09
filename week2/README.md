@@ -204,4 +204,4 @@ long-range contrast falls from 0.354 on the first frame to 0.096 over the last
 20-frame window; the final temperature trace is 1.197. After GitHub Pages is
 enabled from `main` and `/docs`, the page is:
 
-<https://hanchuan-chen.github.io/AMAT5315-2026Fall-Exercise/>
+[Pages viewer](https://hanchuan-chen.github.io/AMAT5315-2026Fall-Exercise/) · [One-take verification recording](https://github.com/Hanchuan-Chen/AMAT5315-2026Fall-Exercise/releases/tag/week2-final)
