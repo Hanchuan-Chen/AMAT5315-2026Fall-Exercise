@@ -1,3 +1,4 @@
+pub mod analysis;
 pub mod artifacts;
 pub mod fluid;
 pub mod physics;
