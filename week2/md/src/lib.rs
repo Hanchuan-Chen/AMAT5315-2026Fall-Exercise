@@ -3,6 +3,7 @@ pub mod artifacts;
 pub mod fluid;
 pub mod physics;
 pub mod simulation;
+pub mod video;
 
 /// Return the greeting printed by the `md` executable.
 pub fn greeting() -> &'static str {

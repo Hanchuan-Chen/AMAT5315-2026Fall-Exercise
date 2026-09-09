@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 use md::analysis::{CheckError, check_run};
 use md::artifacts::{read_artifacts, write_artifacts};
 use md::fluid::{RunConfig, simulate};
+use md::video::render_video;
 
 #[derive(Parser)]
 #[command(
@@ -40,6 +41,11 @@ enum Command {
     },
     Check {
         artifacts: PathBuf,
+    },
+    Video {
+        artifacts: PathBuf,
+        #[arg(long)]
+        out: PathBuf,
     },
 }
 
@@ -113,6 +119,22 @@ fn execute(command: Command) -> Result<(), CliFailure> {
             println!("temperature = {:.4} (|T - 0.5| < 0.05)", report.temperature);
             println!("Rayleigh chi2/dof = {:.3} (< 2.0)", report.chi2_per_dof);
             println!("PASS");
+            Ok(())
+        }
+        Command::Video { artifacts, out } => {
+            let artifacts = read_artifacts(&artifacts).map_err(|error| CliFailure {
+                code: 2,
+                message: format!("contract: {error}"),
+            })?;
+            render_video(&artifacts, &out).map_err(|error| CliFailure {
+                code: 1,
+                message: format!("video: {error}"),
+            })?;
+            println!(
+                "wrote {} frames to {}",
+                artifacts.frames.len(),
+                out.display()
+            );
             Ok(())
         }
     }

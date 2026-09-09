@@ -60,3 +60,18 @@ make reproduce writes artifacts/run.json and artifacts/traj.jsonl. The
 trajectory contains exactly 200 production frames at steps 50 through 10000.
 The artifacts/ directory is ignored by Git because these files are generated
 inputs for the check and video commands.
+
+## Fluid video
+
+With FFmpeg available on PATH, render the saved trajectory from the repository
+root:
+
+~~~bash
+cargo run --manifest-path week2/md/Cargo.toml --release -- \
+  video week2/artifacts --out week2/fluid.mp4
+~~~
+
+The committed fluid.mp4 is H.264/yuv420p at 960x480 and 20 frames per second.
+It contains all 200 trajectory frames (10 seconds), with no duplicated or
+dropped frames, and is 738759 bytes. Each frame shows the periodic particle box
+beside a 64-bin radial distribution averaged over up to 20 recent samples.
