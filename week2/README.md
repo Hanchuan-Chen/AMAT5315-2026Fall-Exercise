@@ -76,7 +76,7 @@ It contains all 200 trajectory frames (10 seconds), with no duplicated or
 dropped frames, and is 738759 bytes. Each frame shows the periodic particle box
 beside a 64-bin radial distribution averaged over up to 20 recent samples.
 
-## Release timing
+## Timing
 
 The supplied NumPy solver and Rust's retained naive path were each run three
 times with the default 100-particle, 2000-step equilibration and 10000-step
@@ -93,7 +93,17 @@ The release median is 6.3% of the debug median, below the required one-third
 threshold. The slower first release invocation is retained rather than hidden;
 the median makes the cold-start effect explicit without discarding a run.
 
-## Cell-list force search
+The timed commands were:
+
+~~~bash
+time /tmp/amat5315-numpy-venv-20260909/bin/python week2-sim.py
+cargo build --manifest-path md/Cargo.toml
+time ./md/target/debug/md run --force naive --out /tmp/md-debug
+cargo build --manifest-path md/Cargo.toml --release
+time ./md/target/release/md run --force naive --out /tmp/md-release
+~~~
+
+## Benchmark: cell-list force search
 
 Select either implementation with `--force naive` or `--force cells`; cells is
 the default. The cell grid uses `floor(L/rc)` cells per direction, making every
@@ -111,9 +121,9 @@ md run --n N --eq-steps 100 --steps 500 --force METHOD --out /tmp/run
 
 | N | naive median (range), s | cells median (range), s | speedup |
 |---:|---:|---:|---:|
-| 100 | 0.0236 (0.0201–0.3711) | 0.0260 (0.0248–0.0287) | 0.91× |
-| 400 | 0.0483 (0.0471–0.0532) | 0.0507 (0.0498–0.0511) | 0.95× |
-| 1600 | 0.4416 (0.4371–0.4426) | 0.1670 (0.1653–0.1674) | 2.64× |
+| 100 | 0.0206 (0.0176–0.3101) | 0.0208 (0.0203–0.0242) | 0.99× |
+| 400 | 0.0449 (0.0436–0.0455) | 0.0406 (0.0398–0.0407) | 1.10× |
+| 1600 | 0.4243 (0.4223–0.4243) | 0.1360 (0.1353–0.1371) | 3.12× |
 
 At small N, process startup, JSON output, bin construction, and allocation hide
 the force-search saving. At N=1600 the all-pairs candidate count grows as
@@ -130,7 +140,7 @@ cargo run --manifest-path md/Cargo.toml --release --example scaling -- scaling.p
 The figure reports each full-command median divided by the 500 production
 steps. See `scaling.png`.
 
-## Profiles
+## Profile
 
 Both profiles use N=400, 200 equilibration steps, and 1000 production steps:
 
@@ -141,12 +151,18 @@ samply record md run --n 400 --eq-steps 200 --steps 1000 \
   --force cells --out /tmp/profile-cells
 ~~~
 
-The symbolicated profiles span 109 ms (naive) and 112 ms (cells). In the naive
+| Version | Force share (%) | Elapsed time (s) |
+|---|---:|---:|
+| Naive | 95.7 | 0.109 |
+| Cell list | 96.4 | 0.095 |
+
+The symbolicated profiles span 109 ms (naive) and 95 ms (cells). In the naive
 profile, `accelerations` accounts for 90 of 94 samples inside `simulate`
 (95.7%; 82.6% of the complete command). In the cells profile it accounts for
-97 of 103 simulation samples (94.2%; 86.6% of the command), now including bin
-construction and neighbor lookup. The evidence is saved as `profile-naive.png`
-and `profile-cells.png`.
+81 of 84 simulation samples (96.4%; 85.3% of the command), now including flat
+bin construction and neighbor lookup. The optimized elapsed time is below the
+naive elapsed time. The evidence is saved as `profile-naive.png` and
+`profile-cells.png`.
 
 ## Heating and melting
 
@@ -170,13 +186,15 @@ the RMS deviation of g(r) from 1 is 0.549 for the cold solid and 0.109 for the
 hot fluid: the cold trajectory retains distant peaks, while the hot trajectory
 retains mainly short-range order.
 
-## Interactive heating page
+## Pages
 
-The supplied viewer is committed at `docs/index.html`. Its adjacent data is a
+The supplied viewer is committed at the repository root's `docs/index.html`.
+Its adjacent data is a
 400-particle ramp from 0.2 to 1.2 over 20000 production steps, sampled every
 100 steps:
 
 ~~~bash
+cd ..
 md run --n 400 --temperature 0.2 --ramp-to 1.2 --steps 20000 \
   --sample-every 100 --out docs
 ~~~

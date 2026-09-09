@@ -290,37 +290,51 @@ fn for_each_periodic_pair(
                 (box_size[0] / cutoff).floor() as usize,
                 (box_size[1] / cutoff).floor() as usize,
             ];
+            let cell_total = cell_counts[0] * cell_counts[1];
             let cell_widths = [
                 box_size[0] / cell_counts[0] as f64,
                 box_size[1] / cell_counts[1] as f64,
             ];
-            let mut atom_cells = Vec::with_capacity(positions.len());
-            let mut bins = vec![Vec::new(); cell_counts[0] * cell_counts[1]];
+            let cell_of = |position: &[f64; 2]| {
+                let x = ((position[0] / cell_widths[0]).floor() as usize).min(cell_counts[0] - 1);
+                let y = ((position[1] / cell_widths[1]).floor() as usize).min(cell_counts[1] - 1);
+                (x, y, y * cell_counts[0] + x)
+            };
+
+            let mut offsets = vec![0_usize; cell_total + 1];
+            for position in positions {
+                offsets[cell_of(position).2 + 1] += 1;
+            }
+            for cell in 1..=cell_total {
+                offsets[cell] += offsets[cell - 1];
+            }
+            let mut cursors = offsets[..cell_total].to_vec();
+            let mut atoms = vec![0_usize; positions.len()];
             for (atom, position) in positions.iter().enumerate() {
-                let cell = [
-                    ((position[0] / cell_widths[0]).floor() as usize).min(cell_counts[0] - 1),
-                    ((position[1] / cell_widths[1]).floor() as usize).min(cell_counts[1] - 1),
-                ];
-                atom_cells.push(cell);
-                bins[cell[1] * cell_counts[0] + cell[0]].push(atom);
+                let id = cell_of(position).2;
+                atoms[cursors[id]] = atom;
+                cursors[id] += 1;
             }
 
-            for (i, cell) in atom_cells.iter().enumerate() {
-                let mut neighbor_ids = Vec::with_capacity(9);
+            for (i, position) in positions.iter().enumerate() {
+                let (cell_x, cell_y, _) = cell_of(position);
+                let mut neighbor_ids = [usize::MAX; 9];
+                let mut neighbor_count = 0;
                 for offset_y in -1..=1 {
                     for offset_x in -1..=1 {
-                        let x = (cell[0] as isize + offset_x).rem_euclid(cell_counts[0] as isize)
+                        let x = (cell_x as isize + offset_x).rem_euclid(cell_counts[0] as isize)
                             as usize;
-                        let y = (cell[1] as isize + offset_y).rem_euclid(cell_counts[1] as isize)
+                        let y = (cell_y as isize + offset_y).rem_euclid(cell_counts[1] as isize)
                             as usize;
                         let id = y * cell_counts[0] + x;
-                        if !neighbor_ids.contains(&id) {
-                            neighbor_ids.push(id);
+                        if !neighbor_ids[..neighbor_count].contains(&id) {
+                            neighbor_ids[neighbor_count] = id;
+                            neighbor_count += 1;
                         }
                     }
                 }
-                for id in neighbor_ids {
-                    for &j in &bins[id] {
+                for &id in &neighbor_ids[..neighbor_count] {
+                    for &j in &atoms[offsets[id]..offsets[id + 1]] {
                         if j > i {
                             consider(i, j);
                         }
