@@ -8,8 +8,11 @@ pub fn energy(r: f64) -> f64 {
 /// Radial Lennard-Jones pair force in reduced units.
 ///
 /// Positive values are repulsive and negative values are attractive.
-pub fn force(_r: f64) -> f64 {
-    todo!("implement the radial Lennard-Jones pair force")
+pub fn force(r: f64) -> f64 {
+    assert!(r.is_finite() && r > 0.0, "separation must be positive");
+    let inv_r = r.recip();
+    let inv_r6 = inv_r.powi(6);
+    24.0 * inv_r * (2.0 * inv_r6 * inv_r6 - inv_r6)
 }
 
 #[cfg(test)]
