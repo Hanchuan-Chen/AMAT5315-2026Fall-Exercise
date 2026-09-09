@@ -49,10 +49,10 @@ Run the Rust checker from the repository root:
 cargo run --manifest-path week2/md/Cargo.toml --release -- check week2/artifacts
 ~~~
 
-For seed 2026, the Rust checker measured energy-consistency error 8.515e-16,
-secular energy drift 2.806e-4, temperature 0.5134, and Rayleigh chi2/dof =
-0.448. The supplied independent Python checker measured energy-consistency
-error 6.816e-16 and the same remaining metrics. Both reported PASS.
+For seed 2026, the Rust checker measured energy-consistency error 9.828e-16,
+secular energy drift 5.521e-4, temperature 0.5136, and Rayleigh chi2/dof =
+1.119. The supplied independent Python checker measured energy-consistency
+error 7.381e-16 and the same remaining metrics. Both reported PASS.
 
 ## Raw artifacts
 
