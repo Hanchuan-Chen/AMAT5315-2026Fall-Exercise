@@ -18,8 +18,8 @@ fn dimer_accelerations_are_equal_opposite_and_attractive() {
     assert!(acceleration[1][0] < 0.0);
     assert!(acceleration[0][1].abs() < TOLERANCE);
     assert!(acceleration[1][1].abs() < TOLERANCE);
-    for axis in 0..2 {
-        assert!((acceleration[0][axis] + acceleration[1][axis]).abs() < TOLERANCE);
+    for (first, second) in acceleration[0].iter().zip(&acceleration[1]) {
+        assert!((first + second).abs() < TOLERANCE);
     }
 }
 
