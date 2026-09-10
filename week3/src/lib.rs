@@ -20,5 +20,5 @@ pub use temperature_sweep::{
     TemperatureSweepConfig, TemperatureSweepSummary, course_temperature_grid,
     write_temperature_sweep, write_wolff_temperature_sweep,
 };
-pub use plot::{write_tau_plot, write_thermodynamic_plots};
+pub use plot::{write_tau_comparison, write_tau_plot, write_thermodynamic_plots};
 pub use wolff::{WolffSweepStats, wolff_add_probability, wolff_cluster_flip, wolff_sweep};

@@ -85,6 +85,15 @@ enum Command {
         #[arg(long, default_value_t = 50)]
         blocks: usize,
     },
+    /// Compare Metropolis and Wolff autocorrelation times at their largest shared size.
+    Compare {
+        #[arg(default_value = "artifacts")]
+        metropolis: PathBuf,
+        #[arg(default_value = "artifacts-wolff")]
+        wolff: PathBuf,
+        #[arg(long, default_value = "tau-compare.png")]
+        output: PathBuf,
+    },
 }
 
 pub fn run() -> Result<(), String> {
@@ -267,6 +276,18 @@ pub fn run() -> Result<(), String> {
             if let Some(tc) = summary.critical_temperature {
                 println!("T_c={tc:.6} Onsager=2.269190");
             }
+            Ok(())
+        }
+        Command::Compare {
+            metropolis,
+            wolff,
+            output,
+        } => {
+            let metropolis = crate::load_analysis(&metropolis).map_err(|error| error.to_string())?;
+            let wolff = crate::load_analysis(&wolff).map_err(|error| error.to_string())?;
+            let l = crate::write_tau_comparison(&metropolis, &wolff, &output)
+                .map_err(|error| error.to_string())?;
+            println!("comparison L={l} output={}", output.display());
             Ok(())
         }
     }
