@@ -40,3 +40,29 @@ https://hanchuan-chen.github.io/AMAT5315-2026Fall-Exercise/week3/
 
 Append `?T=1.8`, `?T=2.3`, or `?T=3.0` to inspect the ordered, critical, and
 disordered regimes.
+
+## Reproduce the measured transition
+
+```bash
+make reproduce
+```
+
+This writes the viewer ramp plus the raw two-size Metropolis run under
+`artifacts/`, then generates `magnetization.png` and `susceptibility.png` and
+prints the two fitted susceptibility peaks and the extrapolated critical
+temperature. The raw files follow the course gate's fixed contracts:
+
+- `artifacts/run.json`: sizes, grid, sweep counts, seed, sampling interval, and
+  `algorithm="metropolis"`.
+- `artifacts/series.jsonl`: one `L,T,sweep,M,E` row after every measurement
+  sweep. The full default contains 2,740,000 rows and remains untracked.
+
+The susceptibility is computed from the signed per-sweep magnetizations,
+
+```text
+chi(T) = L^2 * (<M^2> - <|M|>^2) / T,
+```
+
+and a five-point quadratic fit locates each finite-size peak. The reported
+infinite-size estimate is `T_c = 2 T_peak(64) - T_peak(32)` and is compared with
+Onsager's exact `2.26919`.
