@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
 
-use crate::{RelaxConfig, relax};
+use std::path::PathBuf;
+
+use crate::{RelaxConfig, SnapshotConfig, relax, write_snapshots};
 
 #[derive(Debug, Parser)]
 #[command(name = "ising", about = "Two-dimensional Ising Monte Carlo simulator")]
@@ -23,6 +25,27 @@ enum Command {
         measure: usize,
         #[arg(long, default_value_t = 2026)]
         seed: u64,
+    },
+    /// Record an ascending temperature ramp for the supplied viewer.
+    Snapshots {
+        #[arg(long, default_value_t = 64)]
+        l: usize,
+        #[arg(long, default_value_t = 1.5)]
+        t_start: f64,
+        #[arg(long, default_value_t = 3.5)]
+        t_end: f64,
+        #[arg(long, default_value_t = 0.05)]
+        t_step: f64,
+        #[arg(long, default_value_t = 2000)]
+        equilibrate: usize,
+        #[arg(long, default_value_t = 200)]
+        record: usize,
+        #[arg(long, default_value_t = 20)]
+        frame_every: usize,
+        #[arg(long, default_value_t = 2026)]
+        seed: u64,
+        #[arg(long, default_value = "artifacts/spins.jsonl")]
+        output: PathBuf,
     },
 }
 
@@ -54,6 +77,51 @@ pub fn run() -> Result<(), String> {
             print!("{}", result.render());
             Ok(())
         }
+        Command::Snapshots {
+            l,
+            t_start,
+            t_end,
+            t_step,
+            equilibrate,
+            record,
+            frame_every,
+            seed,
+            output,
+        } => {
+            if l < 2 {
+                return Err("lattice side --l must be at least 2".into());
+            }
+            if !t_start.is_finite()
+                || !t_end.is_finite()
+                || !t_step.is_finite()
+                || t_start <= 0.0
+                || t_end < t_start
+                || t_step <= 0.0
+            {
+                return Err("temperature ramp must be finite, positive, and ascending".into());
+            }
+            if record == 0 || frame_every == 0 || record % frame_every != 0 {
+                return Err("record sweeps must be positive and divisible by --frame-every".into());
+            }
+            let summary = write_snapshots(&SnapshotConfig {
+                l,
+                t_start,
+                t_end,
+                t_step,
+                equilibration_sweeps: equilibrate,
+                recording_sweeps: record,
+                frame_interval: frame_every,
+                seed,
+                output: output.clone(),
+            })
+            .map_err(|error| error.to_string())?;
+            println!(
+                "snapshots frames={} sweeps={} output={}",
+                summary.frames,
+                summary.sweeps,
+                output.display()
+            );
+            Ok(())
+        }
     }
 }
-

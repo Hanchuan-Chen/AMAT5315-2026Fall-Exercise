@@ -22,3 +22,21 @@ cargo test --release
 The tests independently compare each proposed local energy change with total
 energies recomputed from scratch on random lattices and verify seeded
 reproducibility.
+
+## Recorded temperature ramp
+
+```bash
+cargo run --release -- snapshots
+```
+
+The default command writes 410 JSON Lines frames to `artifacts/spins.jsonl` for
+the ascending `T=1.5` to `3.5` protocol.
+
+## Pages
+
+The published viewer is available at:
+
+https://hanchuan-chen.github.io/AMAT5315-2026Fall-Exercise/week3/
+
+Append `?T=1.8`, `?T=2.3`, or `?T=3.0` to inspect the ordered, critical, and
+disordered regimes.

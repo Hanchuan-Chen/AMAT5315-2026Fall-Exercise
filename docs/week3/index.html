@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 3 — Ising lattice: domains forming as the temperature climbs</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #171d2b;
+    --panel2: #1e2637;
+    --ink: #e8edf6;
+    --muted: #93a1b8;
+    --line: #2c3650;
+    --accent: #6ea8ff;
+    --good: #56d364;
+    --warn: #f0b849;
+    --down: #1f2a44;   /* spin down ink, also used as lattice background */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { padding: 14px 22px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 1.15rem; margin: 0; font-weight: 650; }
+  header .sub { color: var(--muted); font-size: .85rem; }
+  header .src { margin-left: auto; color: var(--muted); font-size: .8rem;
+    font-variant-numeric: tabular-nums; }
+  main { display: grid; grid-template-columns: repeat(2, minmax(360px, 1fr));
+    gap: 16px; padding: 16px 22px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; }
+  .card h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  canvas { display: block; width: 100%; background: var(--panel2);
+    border-radius: 6px; touch-action: none; }
+  #latcv { image-rendering: pixelated; }
+  .controls { display: flex; align-items: center; gap: 10px; margin-top: 10px;
+    flex-wrap: wrap; }
+  button { background: var(--panel2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #06101f; border-color: var(--accent);
+    font-weight: 650; }
+  input[type=range] { accent-color: var(--accent); }
+  label.ctl { display: flex; align-items: center; gap: 6px; color: var(--muted);
+    font-size: .82rem; white-space: nowrap; }
+  .frameline { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .frameline input[type=range] { flex: 1; }
+  .frameline .fpos { color: var(--muted); font-size: .8rem;
+    font-variant-numeric: tabular-nums; min-width: 120px; text-align: right; }
+  .readouts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 14px;
+    margin-top: 10px; }
+  .ro { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 7px 9px; }
+  .ro .k { color: var(--muted); font-size: .7rem; text-transform: uppercase;
+    letter-spacing: .04em; }
+  .ro .v { font-size: 1.02rem; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  #drop { position: fixed; inset: 0; background: rgba(9,13,22,.92);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+    border: 3px dashed var(--accent); border-radius: 12px; margin: 14px; }
+  #drop.show { display: flex; }
+  #drop .msg { font-size: 1.3rem; color: var(--accent); }
+  .empty { grid-column: 1 / -1; text-align: center; padding: 46px 20px;
+    border: 2px dashed var(--line); border-radius: 12px; color: var(--muted);
+    background: var(--panel); }
+  .empty h3 { color: var(--ink); font-size: 1.1rem; margin: 0 0 8px; }
+  .empty code { background: var(--panel2); padding: 1px 6px; border-radius: 4px; }
+  .empty .picker { margin-top: 16px; }
+  .note { color: var(--muted); font-size: .78rem; margin-top: 8px; }
+  .reading { color: var(--ink); font-size: .82rem; margin-top: 8px;
+    font-variant-numeric: tabular-nums; }
+  .legend { display: flex; align-items: center; gap: 8px; color: var(--muted);
+    font-size: .76rem; margin-top: 6px; }
+  .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+    border: 1px solid var(--line); vertical-align: -1px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Week 3 — Ising lattice: domains forming as the temperature climbs</h1>
+  <span class="sub">2D Ising · J = 1, no field, periodic · T in units of J</span>
+  <span class="src" id="src">no data</span>
+</header>
+
+<main id="main">
+  <!-- populated by JS -->
+</main>
+
+<!-- fullscreen drop overlay -->
+<div id="drop"><div class="msg">drop spins.jsonl (and run.json) to load</div></div>
+
+<!-- hidden file input -->
+<input id="file" type="file" accept=".jsonl,.json,application/json,text/plain" multiple style="display:none">
+
+<template id="tpl-app">
+  <section class="card">
+    <h2>Lattice — one spin per cell</h2>
+    <canvas id="latcv" width="640" height="640" role="img"
+      aria-label="Animated Ising spin configuration on a square lattice"></canvas>
+    <div class="legend">
+      <span><span class="sw" style="background:#ffffff"></span> spin up</span>
+      <span><span class="sw" style="background:#1f2a44"></span> spin down</span>
+      <span style="margin-left:auto" id="latsize">–</span>
+    </div>
+    <div class="controls">
+      <button id="play" class="primary">▶ play</button>
+      <label class="ctl">fps
+        <input id="fps" type="range" min="1" max="60" value="10" style="width:110px">
+        <span id="fpsval" style="min-width:34px;font-variant-numeric:tabular-nums">10</span></label>
+      <label class="ctl"><input id="loop" type="checkbox" checked> loop</label>
+      <button id="savepng" title="download this frame with its readouts stamped (s)" disabled>⬇ save PNG</button>
+    </div>
+    <div class="frameline">
+      <input id="scrub" type="range" min="0" max="0" value="0">
+      <span class="fpos" id="fpos">frame 0 / 0</span>
+    </div>
+    <div class="readouts">
+      <div class="ro"><div class="k">frame</div><div class="v" id="ro-frame">–</div></div>
+      <div class="ro"><div class="k">temperature T</div><div class="v" id="ro-T">–</div></div>
+      <div class="ro"><div class="k">sweep</div><div class="v" id="ro-sweep">–</div></div>
+      <div class="ro"><div class="k">magnetization m</div><div class="v" id="ro-m">–</div></div>
+    </div>
+    <div class="note">Below T<sub>c</sub> ≈ 2.269 one colour wins and only small island
+      dissenters survive. Near T<sub>c</sub> domains of every size coexist. Above it the
+      lattice is salt-and-pepper and m averages to zero.</div>
+  </section>
+
+  <section class="card">
+    <h2>History — m and T over the whole run</h2>
+    <canvas id="histcv" width="720" height="420" data-h="420" role="img"
+      aria-label="Magnetization and temperature traces over the whole run"></canvas>
+    <div class="reading" id="hist-reading">m = – · T = –</div>
+    <div class="note">Blue: magnetization m of every recorded frame (left axis, −1…1).
+      Amber dashed: the temperature ramp (right axis). Watch m collapse as the dashed
+      line crosses T<sub>c</sub> — that crossing is the phase transition.</div>
+  </section>
+</template>
+
+<script>
+"use strict";
+(function () {
+  const UP = "#ffffff", DOWN = "#1f2a44";
+  const TC = 2 / Math.log(1 + Math.SQRT2);   // Onsager, 2.2692
+
+  // ---------- JSONL parsing ----------
+  function parseJSONL(text) {
+    const frames = [];
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) continue;                        // skip blank lines
+      let obj;
+      try { obj = JSON.parse(line); }
+      catch (e) { continue; }                     // skip malformed lines
+      if (obj && typeof obj.spins === "string") frames.push(obj);
+    }
+    return frames;
+  }
+
+  // ---------- model state ----------
+  const M = {
+    frames: [], run: null,
+    L: 0,
+    cur: 0, playing: false, fps: 10, lastTick: 0,
+    off: null,          // offscreen L x L canvas, upscaled for display
+  };
+  const SRCFILE = { name: "–", size: 0 };   // what was loaded, stamped into the proof PNG
+
+  // ---------- ingest ----------
+  function ingest(frames, run) {
+    if (!frames.length) { showEmpty("No frames parsed from <code>spins.jsonl</code>."); return; }
+    // L comes from the frame; fall back to the square root of the spin string.
+    const f0 = frames[0];
+    M.L = (typeof f0.L === "number" && f0.L > 0) ? f0.L : Math.round(Math.sqrt(f0.spins.length));
+    if (M.L * M.L !== f0.spins.length) {
+      showEmpty("Frame 0 has " + f0.spins.length + " spins, not L² = " + (M.L * M.L) + ".");
+      return;
+    }
+    M.frames = frames;
+    M.run = run || null;
+    M.off = document.createElement("canvas");
+    M.off.width = M.L; M.off.height = M.L;
+    buildUI();
+    M.cur = startFrame();
+    els.scrub.value = String(M.cur);
+    render(true);
+  }
+
+  // ?frame=N jumps to a frame; ?T=2.3 jumps to the LAST frame at that temperature.
+  function startFrame() {
+    const q = new URLSearchParams(location.search);
+    if (q.has("frame")) {
+      const n = parseInt(q.get("frame"), 10);
+      if (Number.isFinite(n)) return Math.max(0, Math.min(M.frames.length - 1, n));
+    }
+    if (q.has("T")) {
+      const want = parseFloat(q.get("T"));
+      if (Number.isFinite(want)) {
+        let best = -1, bestDiff = Infinity;
+        for (let i = 0; i < M.frames.length; i++) {          // last frame wins ties
+          const d = Math.abs((M.frames[i].T ?? NaN) - want);
+          if (d <= bestDiff) { bestDiff = d; best = i; }
+        }
+        if (best >= 0) return best;
+      }
+    }
+    return 0;
+  }
+
+  // ---------- UI wiring ----------
+  let els = {};
+  function buildUI() {
+    const main = document.getElementById("main");
+    main.innerHTML = "";
+    main.appendChild(document.getElementById("tpl-app").content.cloneNode(true));
+
+    els = {
+      latcv: document.getElementById("latcv"),
+      histcv: document.getElementById("histcv"),
+      histReading: document.getElementById("hist-reading"),
+      latsize: document.getElementById("latsize"),
+      play: document.getElementById("play"),
+      fps: document.getElementById("fps"),
+      fpsval: document.getElementById("fpsval"),
+      loop: document.getElementById("loop"),
+      savepng: document.getElementById("savepng"),
+      scrub: document.getElementById("scrub"),
+      fpos: document.getElementById("fpos"),
+      roFrame: document.getElementById("ro-frame"),
+      roT: document.getElementById("ro-T"),
+      roSweep: document.getElementById("ro-sweep"),
+      roM: document.getElementById("ro-m"),
+    };
+
+    els.scrub.max = String(M.frames.length - 1);
+    els.play.onclick = () => setPlaying(!M.playing);
+    els.fps.oninput = () => { M.fps = +els.fps.value; els.fpsval.textContent = els.fps.value; };
+    els.scrub.oninput = () => { M.cur = +els.scrub.value; setPlaying(false); render(); };
+    els.savepng.disabled = false;              // a run is loaded, so the proof is composable
+    els.savepng.onclick = savePNG;
+
+    els.latsize.textContent = M.L + " × " + M.L + " spins";
+    const ts = M.frames.map(f => f.T).filter(t => typeof t === "number");
+    const trange = ts.length ? " · T " + Math.min(...ts).toFixed(2) + "→" + Math.max(...ts).toFixed(2) : "";
+    document.getElementById("src").textContent =
+      M.frames.length + " frames · L = " + M.L + trange + (M.run ? " · run.json ✓" : "");
+
+    sizeCanvases();
+  }
+
+  function setPlaying(on) {
+    M.playing = on;
+    if (els.play) els.play.textContent = on ? "❚❚ pause" : "▶ play";
+    if (on) { M.lastTick = performance.now(); requestAnimationFrame(loop); }
+  }
+
+  function loop(now) {
+    if (!M.playing) return;
+    if (now - M.lastTick >= 1000 / M.fps) {
+      M.lastTick = now;
+      M.cur++;
+      if (M.cur >= M.frames.length) {
+        if (els.loop.checked) M.cur = 0;
+        else { M.cur = M.frames.length - 1; setPlaying(false); render(); return; }
+      }
+      els.scrub.value = String(M.cur);
+      render();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // keep canvas backing stores crisp
+  function sizeCanvases() {
+    const dpr = window.devicePixelRatio || 1;
+    const lw = els.latcv.getBoundingClientRect().width;
+    // square lattice: an integer number of device pixels per cell keeps cells equal
+    const cell = Math.max(1, Math.floor(lw * dpr / M.L));
+    els.latcv.width = els.latcv.height = cell * M.L;
+    const hr = els.histcv.getBoundingClientRect();
+    els.histcv.width = Math.max(1, Math.round(hr.width * dpr));
+    els.histcv.height = Math.max(1, Math.round(+els.histcv.getAttribute("data-h") * dpr));
+  }
+
+  // ---------- rendering ----------
+  function render(forceResize) {
+    if (!M.frames.length) return;
+    if (forceResize) sizeCanvases();
+    drawLattice();
+    drawHistory();
+    updateReadouts();
+  }
+
+  function updateReadouts() {
+    const fr = M.frames[M.cur];
+    els.roFrame.textContent = M.cur + " / " + (M.frames.length - 1);
+    els.roT.textContent = (typeof fr.T === "number") ? fr.T.toFixed(3) : "–";
+    els.roSweep.textContent = (fr.sweep != null) ? fr.sweep : "–";
+    els.roM.textContent = (typeof fr.m === "number") ? fr.m.toFixed(4) : "–";
+    els.fpos.textContent = "frame " + M.cur + " / " + (M.frames.length - 1);
+  }
+
+  // Paint L x L pixels offscreen, then blow them up with smoothing off.
+  function drawLattice() {
+    const L = M.L, spins = M.frames[M.cur].spins;
+    const octx = M.off.getContext("2d");
+    const img = octx.createImageData(L, L);
+    const up = [255, 255, 255], dn = [0x1f, 0x2a, 0x44];
+    for (let k = 0; k < L * L; k++) {
+      const c = spins.charCodeAt(k) === 49 ? up : dn;   // '1' = up
+      img.data[4 * k] = c[0]; img.data[4 * k + 1] = c[1];
+      img.data[4 * k + 2] = c[2]; img.data[4 * k + 3] = 255;
+    }
+    octx.putImageData(img, 0, 0);
+
+    const cv = els.latcv, ctx = cv.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = DOWN;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(M.off, 0, 0, cv.width, cv.height);
+  }
+
+  // m(sweep) on the left axis, T(sweep) dashed on the right axis.
+  function drawHistory() {
+    const cv = els.histcv, ctx = cv.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const W = cv.width, H = cv.height;
+    const padL = 44 * dpr, padR = 46 * dpr, padT = 14 * dpr, padB = 30 * dpr;
+    ctx.clearRect(0, 0, W, H);
+
+    const xs = M.frames.map((f, i) => (typeof f.sweep === "number") ? f.sweep : i);
+    const xlo = xs[0], xhi = xs[xs.length - 1];
+    const Ts = M.frames.map(f => (typeof f.T === "number") ? f.T : 0);
+    let tlo = Math.min(...Ts), thi = Math.max(...Ts);
+    if (thi - tlo < 1e-9) { tlo -= 0.5; thi += 0.5; }
+
+    const PX = x => padL + (x - xlo) / Math.max(1e-9, xhi - xlo) * (W - padL - padR);
+    const PYm = m => H - padB - (m + 1) / 2 * (H - padT - padB);          // m in [-1, 1]
+    const PYt = t => H - padB - (t - tlo) / (thi - tlo) * (H - padT - padB);
+
+    // frame, zero line, and Onsager T_c marker on the right axis
+    ctx.strokeStyle = "#3a4660"; ctx.lineWidth = 1;
+    ctx.strokeRect(padL, padT, W - padL - padR, H - padT - padB);
+    ctx.setLineDash([4 * dpr, 4 * dpr]);
+    ctx.beginPath(); ctx.moveTo(padL, PYm(0)); ctx.lineTo(W - padR, PYm(0)); ctx.stroke();
+    ctx.setLineDash([]);
+    if (TC > tlo && TC < thi) {
+      ctx.strokeStyle = "#56d364"; ctx.lineWidth = 1 * dpr;
+      ctx.setLineDash([2 * dpr, 4 * dpr]);
+      ctx.beginPath(); ctx.moveTo(padL, PYt(TC)); ctx.lineTo(W - padR, PYt(TC)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // T ramp (right axis, dashed amber)
+    ctx.strokeStyle = "#f0b849"; ctx.lineWidth = 1.5 * dpr;
+    ctx.setLineDash([6 * dpr, 4 * dpr]);
+    ctx.beginPath();
+    Ts.forEach((t, i) => { const x = PX(xs[i]), y = PYt(t); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // m trace (left axis, solid blue)
+    ctx.strokeStyle = "#6ea8ff"; ctx.lineWidth = 1.7 * dpr;
+    ctx.beginPath();
+    M.frames.forEach((f, i) => {
+      const x = PX(xs[i]), y = PYm(typeof f.m === "number" ? f.m : 0);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.stroke();
+
+    // current frame: vertical rule + dot on the m trace
+    const cx = PX(xs[M.cur]);
+    ctx.strokeStyle = "#f0b849"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, H - padB); ctx.stroke();
+    ctx.fillStyle = "#f0b849"; ctx.beginPath();
+    ctx.arc(cx, PYm(M.frames[M.cur].m || 0), 3.5 * dpr, 0, 6.2832); ctx.fill();
+
+    // labels and ticks
+    ctx.font = (11 * dpr) + "px system-ui, sans-serif";
+    ctx.fillStyle = "#6ea8ff"; ctx.textAlign = "right";
+    for (const v of [1, 0, -1]) ctx.fillText(v.toFixed(0), padL - 5 * dpr, PYm(v) + 4 * dpr);
+    ctx.fillStyle = "#f0b849"; ctx.textAlign = "left";
+    for (const v of [tlo, (tlo + thi) / 2, thi])
+      ctx.fillText(v.toFixed(2), W - padR + 5 * dpr, PYt(v) + 4 * dpr);
+    ctx.fillStyle = "#93a1b8"; ctx.textAlign = "center";
+    ctx.fillText("sweep", (padL + W - padR) / 2, H - 8 * dpr);
+    for (let k = 0; k <= 4; k++) {
+      const x = xlo + k / 4 * (xhi - xlo);
+      ctx.fillText(String(Math.round(x)), PX(x), H - padB + 15 * dpr);
+    }
+    ctx.textAlign = "left"; ctx.fillStyle = "#6ea8ff";
+    ctx.fillText("m", padL + 7 * dpr, padT + 14 * dpr);
+    ctx.textAlign = "right"; ctx.fillStyle = "#f0b849";
+    ctx.fillText("T", W - padR - 7 * dpr, padT + 14 * dpr);
+
+    const fr = M.frames[M.cur];
+    els.histReading.textContent =
+      "m = " + (typeof fr.m === "number" ? fr.m.toFixed(4) : "–") +
+      " · T = " + (typeof fr.T === "number" ? fr.T.toFixed(3) : "–") +
+      " · sweep " + (fr.sweep != null ? fr.sweep : "–") +
+      " · Onsager T_c = " + TC.toFixed(4);
+  }
+
+  // ---------- proof PNG ----------
+  // One image that carries the whole evidence: the lattice, the m/T history chart, and a
+  // caption stamped with the readouts exactly as the page shows them. Exposed as
+  // window.composeProofPNG() so a headless browser can grab the same image.
+  const fmtSize = b => b ? (b < 1048576 ? Math.round(b / 1024) + " KB" : (b / 1048576).toFixed(1) + " MB")
+                         : "size unknown";
+  function frameKey() {
+    const T = M.frames[M.cur].T;
+    return (typeof T === "number") ? "T" + T.toFixed(2) : "frame" + M.cur;
+  }
+
+  function proofLines() {
+    const fr = M.frames[M.cur];
+    return [
+      "T = " + (typeof fr.T === "number" ? fr.T.toFixed(3) : "–") +
+        "   ·   sweep " + (fr.sweep != null ? fr.sweep : "–") +
+        "   ·   m = " + (typeof fr.m === "number" ? fr.m.toFixed(4) : "–") +
+        "   ·   frame " + M.cur + " / " + (M.frames.length - 1) +
+        "   ·   L = " + M.L + "   ·   Onsager T_c = " + TC.toFixed(4),
+      SRCFILE.name + "   ·   " + fmtSize(SRCFILE.size) + "   ·   " + M.frames.length + " frames" +
+        (M.run ? "   ·   run.json ✓" : ""),
+      "captured " + new Date().toISOString(),
+    ];
+  }
+
+  function composeProofCanvas() {
+    if (!M.frames.length) return null;
+    const cvs = [els.latcv, els.histcv];
+    const S = window.devicePixelRatio || 1;
+    const P = 20 * S, TITLE = 26 * S, LH = 30 * S, INSET = 18 * S;
+    const FONT = "px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    const title = "AMAT5315 · Week 3 — Ising lattice viewer";
+    const lines = proofLines();
+
+    const out = document.createElement("canvas");
+    const ctx = out.getContext("2d");
+    ctx.font = "650 " + TITLE + FONT;
+    let textW = ctx.measureText(title).width;
+    ctx.font = (20 * S) + FONT;
+    for (const L of lines) textW = Math.max(textW, ctx.measureText(L).width);
+
+    const capH = 14 * S + TITLE + 10 * S + lines.length * LH + 14 * S;
+    const W = Math.max(Math.max.apply(null, cvs.map(c => c.width)),
+                       Math.ceil(textW) + 2 * INSET) + 2 * P;
+    out.width = W;
+    out.height = P + cvs.reduce((a, c) => a + c.height + P, 0) + capH + P;
+
+    ctx.fillStyle = "#0f1420"; ctx.fillRect(0, 0, W, out.height);
+    let y = P;
+    for (const c of cvs) {
+      const x = Math.round((W - c.width) / 2);
+      ctx.fillStyle = "#1e2637"; ctx.fillRect(x, y, c.width, c.height);   // canvases are transparent
+      ctx.drawImage(c, x, y);
+      y += c.height + P;
+    }
+    ctx.fillStyle = "#171d2b"; ctx.fillRect(P, y, W - 2 * P, capH);
+    ctx.strokeStyle = "#2c3650"; ctx.lineWidth = 1;
+    ctx.strokeRect(P + 0.5, y + 0.5, W - 2 * P - 1, capH - 1);
+    let ty = y + 14 * S + TITLE - 6 * S;
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#e8edf6"; ctx.font = "650 " + TITLE + FONT;
+    ctx.fillText(title, P + INSET, ty);
+    ctx.font = (20 * S) + FONT; ctx.fillStyle = "#93a1b8";
+    for (const L of lines) { ty += LH; ctx.fillText(L, P + INSET, ty); }
+    return out;
+  }
+
+  window.composeProofPNG = function () {
+    const cv = composeProofCanvas();
+    return cv ? cv.toDataURL("image/png") : null;
+  };
+
+  function savePNG() {
+    const cv = composeProofCanvas();
+    if (!cv) return;
+    cv.toBlob(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "week3-ising-" + frameKey() + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }, "image/png");
+  }
+
+  // ---------- empty state ----------
+  function showEmpty(msg) {
+    const main = document.getElementById("main");
+    main.innerHTML = "";
+    const box = document.createElement("div");
+    box.className = "empty";
+    box.innerHTML =
+      "<h3>Drop your <code>spins.jsonl</code> here</h3>" +
+      "<div>" + (msg || "") + "</div>" +
+      "<div><code>run.json</code> may be dropped alongside; it is optional.</div>" +
+      "<div class='picker'><button id='pick' class='primary'>choose file(s)…</button></div>" +
+      "<div class='note'>Or serve this page next to your artifacts (GitHub Pages) and it " +
+      "auto-loads <code>./spins.jsonl</code> + <code>./run.json</code>.</div>";
+    main.appendChild(box);
+    document.getElementById("pick").onclick = () => document.getElementById("file").click();
+  }
+
+  // ---------- file / drop / fetch loading ----------
+  function readFiles(fileList) {
+    const files = Array.from(fileList);
+    const spinFile = files.find(f => /\.jsonl$/i.test(f.name)) ||
+                     files.find(f => /spins/i.test(f.name));
+    const runFile = files.find(f => /run\.json$/i.test(f.name)) ||
+                    files.find(f => /\.json$/i.test(f.name) && f !== spinFile);
+    if (!spinFile) { alert("Please include a spins.jsonl file."); return; }
+    SRCFILE.name = spinFile.name; SRCFILE.size = spinFile.size;
+    const readText = f => new Promise((res, rej) => {
+      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(f);
+    });
+    const jobs = [readText(spinFile)];
+    if (runFile) jobs.push(readText(runFile));
+    Promise.all(jobs).then(texts => {
+      let run = null;
+      if (texts[1]) { try { run = JSON.parse(texts[1]); } catch (e) { run = null; } }
+      ingest(parseJSONL(texts[0]), run);
+    }).catch(() => alert("Could not read the dropped files."));
+  }
+
+  document.getElementById("file").addEventListener("change", e => {
+    if (e.target.files && e.target.files.length) readFiles(e.target.files);
+  });
+
+  // drag & drop over the whole window
+  const drop = document.getElementById("drop");
+  let dragDepth = 0;
+  window.addEventListener("dragenter", e => { e.preventDefault(); dragDepth++; drop.classList.add("show"); });
+  window.addEventListener("dragover", e => { e.preventDefault(); });
+  window.addEventListener("dragleave", e => { e.preventDefault(); if (--dragDepth <= 0) drop.classList.remove("show"); });
+  window.addEventListener("drop", e => {
+    e.preventDefault(); dragDepth = 0; drop.classList.remove("show");
+    if (e.dataTransfer && e.dataTransfer.files.length) readFiles(e.dataTransfer.files);
+  });
+
+  // keyboard: space = play/pause, arrows = step one frame
+  window.addEventListener("keydown", e => {
+    if (!M.frames.length) return;
+    if (e.code === "Space") { e.preventDefault(); setPlaying(!M.playing); }
+    else if (e.code === "ArrowRight") { setPlaying(false); M.cur = Math.min(M.frames.length - 1, M.cur + 1); els.scrub.value = M.cur; render(); }
+    else if (e.code === "ArrowLeft") { setPlaying(false); M.cur = Math.max(0, M.cur - 1); els.scrub.value = M.cur; render(); }
+    else if (e.key === "s" || e.key === "S") savePNG();
+  });
+
+  window.addEventListener("resize", () => { if (M.frames.length) render(true); });
+
+  // ---------- auto-fetch of deployed artifacts (GitHub Pages) ----------
+  function tryFetch() {
+    fetch("./spins.jsonl").then(r => {
+      if (!r.ok) throw new Error("no spins.jsonl");
+      SRCFILE.name = "spins.jsonl"; SRCFILE.size = +(r.headers.get("content-length") || 0);
+      return r.text();
+    }).then(text => {
+      const frames = parseJSONL(text);
+      fetch("./run.json").then(r => r.ok ? r.json() : null).catch(() => null)
+        .then(run => ingest(frames, run))
+        .catch(() => ingest(frames, null));
+    }).catch(() => {
+      showEmpty("No <code>./spins.jsonl</code> found next to this page.");
+    });
+  }
+
+  showEmpty("Loading…");
+  tryFetch();
+})();
+</script>
+</body>
+</html>
