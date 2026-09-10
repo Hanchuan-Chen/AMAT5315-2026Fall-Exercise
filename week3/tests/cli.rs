@@ -115,6 +115,25 @@ fn analyze_prints_both_errors_ratio_and_autocorrelation() {
 }
 
 #[test]
+fn sweep_wolff_switches_the_saved_algorithm() {
+    let directory = tempdir().unwrap();
+    Command::cargo_bin("ising")
+        .unwrap()
+        .args([
+            "sweep", "--wolff", "--sizes", "4", "--temperatures", "2.0,2.1",
+            "--equilibrate", "1", "--measure-critical", "3", "--output-dir",
+        ])
+        .arg(directory.path())
+        .assert()
+        .success();
+    let run: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(directory.path().join("run.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(run["algorithm"], "wolff");
+}
+
+#[test]
 fn relax_rejects_invalid_physical_parameters() {
     for args in [
         vec!["relax", "--l", "0", "--t", "2.3", "--measure", "1"],
