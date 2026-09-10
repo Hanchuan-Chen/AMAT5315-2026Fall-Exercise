@@ -134,6 +134,40 @@ fn sweep_wolff_switches_the_saved_algorithm() {
 }
 
 #[test]
+fn compare_writes_the_shared_size_tau_chart() {
+    let directory = tempdir().unwrap();
+    let metropolis = directory.path().join("metropolis");
+    let wolff = directory.path().join("wolff");
+    for (output, algorithm_flag) in [(&metropolis, None), (&wolff, Some("--wolff"))] {
+        let mut command = Command::cargo_bin("ising").unwrap();
+        command.arg("sweep");
+        if let Some(flag) = algorithm_flag {
+            command.arg(flag);
+        }
+        command
+            .args([
+                "--sizes", "4", "--temperatures", "2.0,2.1", "--equilibrate", "1",
+                "--measure", "20", "--measure-critical", "20", "--output-dir",
+            ])
+            .arg(output)
+            .assert()
+            .success();
+    }
+    let output = directory.path().join("tau-compare.png");
+    Command::cargo_bin("ising")
+        .unwrap()
+        .arg("compare")
+        .arg(&metropolis)
+        .arg(&wolff)
+        .arg("--output")
+        .arg(&output)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("L=4"));
+    assert!(output.is_file());
+}
+
+#[test]
 fn relax_rejects_invalid_physical_parameters() {
     for args in [
         vec!["relax", "--l", "0", "--t", "2.3", "--measure", "1"],
