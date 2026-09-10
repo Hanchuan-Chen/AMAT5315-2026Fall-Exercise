@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use tempfile::tempdir;
 
 #[test]
 fn relax_prints_one_summary_and_one_character_per_spin() {
@@ -19,6 +20,24 @@ fn relax_prints_one_summary_and_one_character_per_spin() {
     assert!(lines[0].contains("mean_abs_m="));
     assert!(lines[0].contains("accept="));
     assert!(lines[1..].iter().all(|line| line.chars().count() == 4));
+}
+
+#[test]
+fn snapshots_accepts_tunable_protocol_values() {
+    let directory = tempdir().unwrap();
+    let output = directory.path().join("frames.jsonl");
+    Command::cargo_bin("ising")
+        .expect("binary")
+        .args([
+            "snapshots", "--l", "4", "--t-start", "1.5", "--t-end", "1.6",
+            "--t-step", "0.1", "--equilibrate", "1", "--record", "2",
+            "--frame-every", "1", "--seed", "9", "--output",
+        ])
+        .arg(&output)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("frames=4"));
+    assert_eq!(std::fs::read_to_string(output).unwrap().lines().count(), 4);
 }
 
 #[test]
