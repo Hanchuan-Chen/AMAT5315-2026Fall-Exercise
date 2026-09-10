@@ -7,8 +7,17 @@ fn relax_prints_one_summary_and_one_character_per_spin() {
     let output = Command::cargo_bin("ising")
         .expect("binary")
         .args([
-            "relax", "--l", "4", "--t", "2.3", "--sweeps", "2", "--measure", "3",
-            "--seed", "2026",
+            "relax",
+            "--l",
+            "4",
+            "--t",
+            "2.3",
+            "--sweeps",
+            "2",
+            "--measure",
+            "3",
+            "--seed",
+            "2026",
         ])
         .output()
         .expect("run command");
@@ -29,9 +38,24 @@ fn snapshots_accepts_tunable_protocol_values() {
     Command::cargo_bin("ising")
         .expect("binary")
         .args([
-            "snapshots", "--l", "4", "--t-start", "1.5", "--t-end", "1.6",
-            "--t-step", "0.1", "--equilibrate", "1", "--record", "2",
-            "--frame-every", "1", "--seed", "9", "--output",
+            "snapshots",
+            "--l",
+            "4",
+            "--t-start",
+            "1.5",
+            "--t-end",
+            "1.6",
+            "--t-step",
+            "0.1",
+            "--equilibrate",
+            "1",
+            "--record",
+            "2",
+            "--frame-every",
+            "1",
+            "--seed",
+            "9",
+            "--output",
         ])
         .arg(&output)
         .assert()
@@ -46,9 +70,23 @@ fn sweep_accepts_tunable_protocol_values() {
     Command::cargo_bin("ising")
         .expect("binary")
         .args([
-            "sweep", "--sizes", "4", "--temperatures", "1.5,2.0",
-            "--equilibrate", "1", "--measure", "2", "--measure-critical", "3",
-            "--critical-low", "2.0", "--critical-high", "2.6", "--seed", "9",
+            "sweep",
+            "--sizes",
+            "4",
+            "--temperatures",
+            "1.5,2.0",
+            "--equilibrate",
+            "1",
+            "--measure",
+            "2",
+            "--measure-critical",
+            "3",
+            "--critical-low",
+            "2.0",
+            "--critical-high",
+            "2.6",
+            "--seed",
+            "9",
             "--output-dir",
         ])
         .arg(directory.path())
@@ -70,8 +108,17 @@ fn plot_reads_a_saved_run_and_writes_both_pngs() {
     Command::cargo_bin("ising")
         .unwrap()
         .args([
-            "sweep", "--sizes", "4", "--temperatures", "1.5,1.6,1.7,1.8,1.9",
-            "--equilibrate", "1", "--measure", "2", "--measure-critical", "2",
+            "sweep",
+            "--sizes",
+            "4",
+            "--temperatures",
+            "1.5,1.6,1.7,1.8,1.9",
+            "--equilibrate",
+            "1",
+            "--measure",
+            "2",
+            "--measure-critical",
+            "2",
             "--output-dir",
         ])
         .arg(directory.path())
@@ -93,8 +140,17 @@ fn analyze_prints_both_errors_ratio_and_autocorrelation() {
     Command::cargo_bin("ising")
         .unwrap()
         .args([
-            "sweep", "--sizes", "4", "--temperatures", "1.5,1.6,1.7,1.8,1.9",
-            "--equilibrate", "1", "--measure", "20", "--measure-critical", "20",
+            "sweep",
+            "--sizes",
+            "4",
+            "--temperatures",
+            "1.5,1.6,1.7,1.8,1.9",
+            "--equilibrate",
+            "1",
+            "--measure",
+            "20",
+            "--measure-critical",
+            "20",
             "--output-dir",
         ])
         .arg(directory.path())
@@ -120,16 +176,24 @@ fn sweep_wolff_switches_the_saved_algorithm() {
     Command::cargo_bin("ising")
         .unwrap()
         .args([
-            "sweep", "--wolff", "--sizes", "4", "--temperatures", "2.0,2.1",
-            "--equilibrate", "1", "--measure-critical", "3", "--output-dir",
+            "sweep",
+            "--wolff",
+            "--sizes",
+            "4",
+            "--temperatures",
+            "2.0,2.1",
+            "--equilibrate",
+            "1",
+            "--measure-critical",
+            "3",
+            "--output-dir",
         ])
         .arg(directory.path())
         .assert()
         .success();
-    let run: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(directory.path().join("run.json")).unwrap(),
-    )
-    .unwrap();
+    let run: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(directory.path().join("run.json")).unwrap())
+            .unwrap();
     assert_eq!(run["algorithm"], "wolff");
 }
 
@@ -146,8 +210,17 @@ fn compare_writes_the_shared_size_tau_chart() {
         }
         command
             .args([
-                "--sizes", "4", "--temperatures", "2.0,2.1", "--equilibrate", "1",
-                "--measure", "20", "--measure-critical", "20", "--output-dir",
+                "--sizes",
+                "4",
+                "--temperatures",
+                "2.0,2.1",
+                "--equilibrate",
+                "1",
+                "--measure",
+                "20",
+                "--measure-critical",
+                "20",
+                "--output-dir",
             ])
             .arg(output)
             .assert()

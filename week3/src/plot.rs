@@ -61,7 +61,10 @@ pub fn write_tau_plot(summary: &AnalysisSummary, directory: &Path) -> Result<(),
         .margin(24)
         .x_label_area_size(45)
         .y_label_area_size(65)
-        .build_cartesian_2d((t_min - 0.05)..(t_max + 0.05), (0.4..maximum * 1.2).log_scale())?;
+        .build_cartesian_2d(
+            (t_min - 0.05)..(t_max + 0.05),
+            (0.4..maximum * 1.2).log_scale(),
+        )?;
     chart
         .configure_mesh()
         .x_desc("temperature T")
@@ -104,7 +107,10 @@ pub fn write_tau_comparison(
                     .iter()
                     .map(|value| value.abs())
                     .collect();
-                (point.temperature, integrated_autocorrelation_time(&absolute))
+                (
+                    point.temperature,
+                    integrated_autocorrelation_time(&absolute),
+                )
             })
             .collect::<Vec<_>>()
     };
@@ -131,11 +137,17 @@ pub fn write_tau_comparison(
     let root = BitMapBackend::new(output, (960, 640)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
-        .caption(format!("Update-rule autocorrelation at L={l}"), ("sans-serif", 32))
+        .caption(
+            format!("Update-rule autocorrelation at L={l}"),
+            ("sans-serif", 32),
+        )
         .margin(24)
         .x_label_area_size(45)
         .y_label_area_size(65)
-        .build_cartesian_2d((t_min - 0.02)..(t_max + 0.02), (0.4..maximum * 1.2).log_scale())?;
+        .build_cartesian_2d(
+            (t_min - 0.02)..(t_max + 0.02),
+            (0.4..maximum * 1.2).log_scale(),
+        )?;
     chart
         .configure_mesh()
         .x_desc("temperature T")
@@ -171,10 +183,16 @@ pub fn write_thermodynamic_plots(
         .x_label_area_size(45)
         .y_label_area_size(55)
         .build_cartesian_2d(1.45..3.55, 0.0..1.02)?;
-    chart.configure_mesh().x_desc("temperature T").y_desc("<|m|>").draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("temperature T")
+        .y_desc("<|m|>")
+        .draw()?;
     chart
         .draw_series(LineSeries::new(
-            (150..=350).map(|value| value as f64 / 100.0).map(|t| (t, onsager(t))),
+            (150..=350)
+                .map(|value| value as f64 / 100.0)
+                .map(|t| (t, onsager(t))),
             &RED,
         ))?
         .label("Onsager")
@@ -183,7 +201,9 @@ pub fn write_thermodynamic_plots(
         let color = Palette99::pick(index);
         chart
             .draw_series(LineSeries::new(
-                points.iter().map(|point| (point.temperature, point.mean_abs_m)),
+                points
+                    .iter()
+                    .map(|point| (point.temperature, point.mean_abs_m)),
                 &color,
             ))?
             .label(format!("L={l}"))
@@ -208,7 +228,11 @@ pub fn write_thermodynamic_plots(
         .x_label_area_size(45)
         .y_label_area_size(55)
         .build_cartesian_2d(1.9..2.8, 0.0..maximum * 1.1)?;
-    chart.configure_mesh().x_desc("temperature T").y_desc("chi(T)").draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("temperature T")
+        .y_desc("chi(T)")
+        .draw()?;
     for (index, (&l, points)) in summary.by_size.iter().enumerate() {
         let color = Palette99::pick(index);
         chart

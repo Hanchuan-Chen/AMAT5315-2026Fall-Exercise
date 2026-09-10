@@ -4,9 +4,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use serde::Deserialize;
 use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
+use serde::Deserialize;
 
 fn sample_standard_deviation(values: &[f64]) -> f64 {
     if values.len() < 2 {
@@ -82,28 +82,30 @@ pub fn integrated_autocorrelation_time(values: &[f64]) -> f64 {
 pub fn susceptibility(l: usize, temperature: f64, magnetizations: &[f64]) -> f64 {
     let n = magnetizations.len() as f64;
     let mean_abs = magnetizations.iter().map(|value| value.abs()).sum::<f64>() / n;
-    let mean_square = magnetizations.iter().map(|value| value * value).sum::<f64>() / n;
+    let mean_square = magnetizations
+        .iter()
+        .map(|value| value * value)
+        .sum::<f64>()
+        / n;
     (l * l) as f64 * (mean_square - mean_abs * mean_abs) / temperature
 }
 
 fn solve_three(mut matrix: [[f64; 4]; 3]) -> Option<[f64; 3]> {
     for column in 0..3 {
-        let pivot = (column..3).max_by(|&a, &b| {
-            matrix[a][column]
-                .abs()
-                .total_cmp(&matrix[b][column].abs())
-        })?;
+        let pivot = (column..3)
+            .max_by(|&a, &b| matrix[a][column].abs().total_cmp(&matrix[b][column].abs()))?;
         if matrix[pivot][column].abs() < 1e-14 {
             return None;
         }
         matrix.swap(column, pivot);
+        let pivot_row = matrix[column];
         for row in 0..3 {
             if row == column {
                 continue;
             }
             let factor = matrix[row][column] / matrix[column][column];
-            for entry in column..4 {
-                matrix[row][entry] -= factor * matrix[column][entry];
+            for (entry, value) in matrix[row].iter_mut().enumerate().skip(column) {
+                *value -= factor * pivot_row[entry];
             }
         }
     }

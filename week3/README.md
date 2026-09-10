@@ -89,3 +89,31 @@ naive error. At `T=3.5`, `tau_int=2.44` and the ratio is only 2.22. Thus blocks 
 2000 sweeps at the transition span only about two autocorrelation times and have
 not fully reached the error plateau; the reported blocked error there is still
 optimistic.
+
+## Wolff clusters
+
+```bash
+cargo run --release -- sweep --wolff
+cargo run --release -- analyze artifacts-wolff --blocks 50
+make compare
+```
+
+The Wolff update grows like-spin clusters with bond probability
+`1-exp(-2/T)` and always flips the completed cluster. One comparable sweep is
+enough whole cluster flips to touch at least `L^2` spins. The default cluster run
+covers `T=2.0..2.6:0.05`, writes the same raw contract under
+`artifacts-wolff/` with `algorithm="wolff"`, and produces 2,600,000 rows.
+
+At `L=64,T=2.3`, Wolff gives `mean_abs_m=0.524456`, error ratio `1.45`, and
+`tau_int=0.86`, versus Metropolis `0.443748`, `32.59`, and `939.80`. The same
+number of stored sweeps is therefore worth roughly a thousand times more under
+clusters. The Metropolis result differs because its 100000 sweeps contain only
+about 53 effective samples and its 2000-sweep blocks are only about two
+autocorrelation times long; the blocked error has not reached its plateau.
+
+Away from the peak, the two methods agree much more closely: at `T=2.0` their
+means are `0.911601` and `0.911492`; at `T=2.6` they are `0.075293` and
+`0.078100`, with the slow Metropolis series retaining the larger uncertainty.
+The Wolff susceptibility peaks give `T_c=2.295180`, a `+1.15%` deviation from
+Onsager and within the required 2%. `tau-compare.png` shows the Metropolis peak
+near 940 sweeps while Wolff stays below one sweep throughout the window.

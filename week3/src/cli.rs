@@ -207,7 +207,11 @@ pub fn run() -> Result<(), String> {
                 return Err("measurement sweep counts must be positive".into());
             }
             let output_dir = output_dir.unwrap_or_else(|| {
-                PathBuf::from(if wolff { "artifacts-wolff" } else { "artifacts" })
+                PathBuf::from(if wolff {
+                    "artifacts-wolff"
+                } else {
+                    "artifacts"
+                })
             });
             let config = TemperatureSweepConfig {
                 sizes,
@@ -226,7 +230,11 @@ pub fn run() -> Result<(), String> {
                 write_temperature_sweep(&config)
             }
             .map_err(|error| error.to_string())?;
-            println!("sweep rows={} output={}", summary.rows, output_dir.display());
+            println!(
+                "sweep rows={} output={}",
+                summary.rows,
+                output_dir.display()
+            );
             Ok(())
         }
         Command::Plot { directory } => {
@@ -283,7 +291,8 @@ pub fn run() -> Result<(), String> {
             wolff,
             output,
         } => {
-            let metropolis = crate::load_analysis(&metropolis).map_err(|error| error.to_string())?;
+            let metropolis =
+                crate::load_analysis(&metropolis).map_err(|error| error.to_string())?;
             let wolff = crate::load_analysis(&wolff).map_err(|error| error.to_string())?;
             let l = crate::write_tau_comparison(&metropolis, &wolff, &output)
                 .map_err(|error| error.to_string())?;

@@ -14,7 +14,10 @@ pub fn course_temperature_grid() -> Vec<f64> {
     hundredths.extend((200..=260).step_by(5));
     hundredths.sort_unstable();
     hundredths.dedup();
-    hundredths.into_iter().map(|value| value as f64 / 100.0).collect()
+    hundredths
+        .into_iter()
+        .map(|value| value as f64 / 100.0)
+        .collect()
 }
 
 #[derive(Clone, Debug)]
@@ -98,7 +101,11 @@ fn write_sweep_with_algorithm(
     let mut rows = 0;
 
     for &l in &config.sizes {
-        let size_seed = if l == 32 { config.seed + 1000 } else { config.seed };
+        let size_seed = if l == 32 {
+            config.seed + 1000
+        } else {
+            config.seed
+        };
         let mut rng = StdRng::seed_from_u64(size_seed);
         let mut lattice = Lattice::all_up(l);
         for &temperature in &config.temperatures {

@@ -38,14 +38,29 @@ fn sweep_writes_exact_contract_in_protocol_order_and_six_decimals() {
     let summary = write_temperature_sweep(&small_config(directory.path().into())).unwrap();
     assert_eq!(summary.rows, 5);
 
-    let run: Value = serde_json::from_str(
-        &fs::read_to_string(directory.path().join("run.json")).unwrap(),
-    )
-    .unwrap();
-    let mut run_keys: Vec<_> = run.as_object().unwrap().keys().map(String::as_str).collect();
+    let run: Value =
+        serde_json::from_str(&fs::read_to_string(directory.path().join("run.json")).unwrap())
+            .unwrap();
+    let mut run_keys: Vec<_> = run
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(String::as_str)
+        .collect();
     run_keys.sort_unstable();
-    assert_eq!(run_keys, ["algorithm", "eq_sweeps", "meas_sweeps",
-        "meas_sweeps_critical", "sample_every", "seed", "sizes", "t_grid"]);
+    assert_eq!(
+        run_keys,
+        [
+            "algorithm",
+            "eq_sweeps",
+            "meas_sweeps",
+            "meas_sweeps_critical",
+            "sample_every",
+            "seed",
+            "sizes",
+            "t_grid"
+        ]
+    );
     assert_eq!(run["algorithm"], "metropolis");
     assert_eq!(run["sample_every"], 1);
 
@@ -53,15 +68,32 @@ fn sweep_writes_exact_contract_in_protocol_order_and_six_decimals() {
     let lines: Vec<_> = text.lines().collect();
     assert_eq!(lines.len(), 5);
     assert!(lines.iter().all(|line| {
-        let m = line.split("\"M\":").nth(1).unwrap().split(',').next().unwrap();
+        let m = line
+            .split("\"M\":")
+            .nth(1)
+            .unwrap()
+            .split(',')
+            .next()
+            .unwrap();
         let e = line.split("\"E\":").nth(1).unwrap().trim_end_matches('}');
         m.split('.').nth(1).unwrap().len() == 6 && e.split('.').nth(1).unwrap().len() == 6
     }));
-    let rows: Vec<Value> = lines.iter().map(|line| serde_json::from_str(line).unwrap()).collect();
-    assert_eq!(rows.iter().map(|row| row["T"].as_f64().unwrap()).collect::<Vec<_>>(),
-               [1.5, 1.5, 2.0, 2.0, 2.0]);
-    assert_eq!(rows.iter().map(|row| row["sweep"].as_u64().unwrap()).collect::<Vec<_>>(),
-               [0, 1, 0, 1, 2]);
+    let rows: Vec<Value> = lines
+        .iter()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_eq!(
+        rows.iter()
+            .map(|row| row["T"].as_f64().unwrap())
+            .collect::<Vec<_>>(),
+        [1.5, 1.5, 2.0, 2.0, 2.0]
+    );
+    assert_eq!(
+        rows.iter()
+            .map(|row| row["sweep"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        [0, 1, 0, 1, 2]
+    );
 }
 
 #[test]
@@ -71,18 +103,19 @@ fn sweep_is_byte_reproducible() {
     let second = directory.path().join("second");
     write_temperature_sweep(&small_config(first.clone())).unwrap();
     write_temperature_sweep(&small_config(second.clone())).unwrap();
-    assert_eq!(fs::read(first.join("series.jsonl")).unwrap(),
-               fs::read(second.join("series.jsonl")).unwrap());
+    assert_eq!(
+        fs::read(first.join("series.jsonl")).unwrap(),
+        fs::read(second.join("series.jsonl")).unwrap()
+    );
 }
 
 #[test]
 fn wolff_sweep_reuses_the_contract_and_labels_the_algorithm() {
     let directory = tempdir().unwrap();
     write_wolff_temperature_sweep(&small_config(directory.path().into())).unwrap();
-    let run: Value = serde_json::from_str(
-        &fs::read_to_string(directory.path().join("run.json")).unwrap(),
-    )
-    .unwrap();
+    let run: Value =
+        serde_json::from_str(&fs::read_to_string(directory.path().join("run.json")).unwrap())
+            .unwrap();
     assert_eq!(run["algorithm"], "wolff");
     assert_eq!(
         fs::read_to_string(directory.path().join("series.jsonl"))

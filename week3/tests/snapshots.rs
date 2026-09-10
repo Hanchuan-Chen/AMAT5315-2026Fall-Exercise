@@ -26,12 +26,23 @@ fn snapshot_ramp_obeys_the_frame_contract_and_cadence() {
     assert_eq!(summary.frames, 6);
 
     let text = fs::read_to_string(path).unwrap();
-    let rows: Vec<Value> = text.lines().map(|line| serde_json::from_str(line).unwrap()).collect();
+    let rows: Vec<Value> = text
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
     assert_eq!(rows.len(), 6);
-    assert_eq!(rows.iter().map(|row| row["T"].as_f64().unwrap()).collect::<Vec<_>>(),
-               [1.5, 1.5, 1.6, 1.6, 1.7, 1.7]);
-    assert_eq!(rows.iter().map(|row| row["sweep"].as_u64().unwrap()).collect::<Vec<_>>(),
-               [4, 6, 10, 12, 16, 18]);
+    assert_eq!(
+        rows.iter()
+            .map(|row| row["T"].as_f64().unwrap())
+            .collect::<Vec<_>>(),
+        [1.5, 1.5, 1.6, 1.6, 1.7, 1.7]
+    );
+    assert_eq!(
+        rows.iter()
+            .map(|row| row["sweep"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        [4, 6, 10, 12, 16, 18]
+    );
     for row in rows {
         let object = row.as_object().unwrap();
         let mut keys: Vec<_> = object.keys().map(String::as_str).collect();

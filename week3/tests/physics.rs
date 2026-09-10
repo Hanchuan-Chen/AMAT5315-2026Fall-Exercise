@@ -40,4 +40,3 @@ fn one_sweep_makes_exactly_one_proposal_per_site_on_average() {
     assert_eq!(stats.proposals, 49);
     assert!(stats.accepted <= stats.proposals);
 }
-
