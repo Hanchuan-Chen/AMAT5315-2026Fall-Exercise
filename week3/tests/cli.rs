@@ -88,6 +88,33 @@ fn plot_reads_a_saved_run_and_writes_both_pngs() {
 }
 
 #[test]
+fn analyze_prints_both_errors_ratio_and_autocorrelation() {
+    let directory = tempdir().unwrap();
+    Command::cargo_bin("ising")
+        .unwrap()
+        .args([
+            "sweep", "--sizes", "4", "--temperatures", "1.5,1.6,1.7,1.8,1.9",
+            "--equilibrate", "1", "--measure", "20", "--measure-critical", "20",
+            "--output-dir",
+        ])
+        .arg(directory.path())
+        .assert()
+        .success();
+    Command::cargo_bin("ising")
+        .unwrap()
+        .arg("analyze")
+        .arg(directory.path())
+        .args(["--blocks", "5"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("naive="))
+        .stdout(predicate::str::contains("blocked="))
+        .stdout(predicate::str::contains("ratio="))
+        .stdout(predicate::str::contains("tau_int="));
+    assert!(directory.path().join("tau.png").is_file());
+}
+
+#[test]
 fn relax_rejects_invalid_physical_parameters() {
     for args in [
         vec!["relax", "--l", "0", "--t", "2.3", "--measure", "1"],
