@@ -65,6 +65,29 @@ fn sweep_accepts_tunable_protocol_values() {
 }
 
 #[test]
+fn plot_reads_a_saved_run_and_writes_both_pngs() {
+    let directory = tempdir().unwrap();
+    Command::cargo_bin("ising")
+        .unwrap()
+        .args([
+            "sweep", "--sizes", "4", "--temperatures", "1.5,1.6,1.7,1.8,1.9",
+            "--equilibrate", "1", "--measure", "2", "--measure-critical", "2",
+            "--output-dir",
+        ])
+        .arg(directory.path())
+        .assert()
+        .success();
+    Command::cargo_bin("ising")
+        .unwrap()
+        .arg("plot")
+        .arg(directory.path())
+        .assert()
+        .success();
+    assert!(directory.path().join("magnetization.png").is_file());
+    assert!(directory.path().join("susceptibility.png").is_file());
+}
+
+#[test]
 fn relax_rejects_invalid_physical_parameters() {
     for args in [
         vec!["relax", "--l", "0", "--t", "2.3", "--measure", "1"],
