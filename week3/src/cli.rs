@@ -71,6 +71,11 @@ enum Command {
         #[arg(long, default_value = "artifacts")]
         output_dir: PathBuf,
     },
+    /// Draw thermodynamic plots and print the finite-size critical estimate.
+    Plot {
+        #[arg(default_value = "artifacts")]
+        directory: PathBuf,
+    },
 }
 
 pub fn run() -> Result<(), String> {
@@ -186,6 +191,27 @@ pub fn run() -> Result<(), String> {
             })
             .map_err(|error| error.to_string())?;
             println!("sweep rows={} output={}", summary.rows, output_dir.display());
+            Ok(())
+        }
+        Command::Plot { directory } => {
+            let summary = crate::load_analysis(&directory).map_err(|error| error.to_string())?;
+            crate::write_thermodynamic_plots(&summary, &directory)
+                .map_err(|error| error.to_string())?;
+            for (&l, points) in &summary.by_size {
+                if let Some(point) = points.first() {
+                    println!(
+                        "ordered L={l} T={:.2} mean_abs_m={:.6}",
+                        point.temperature, point.mean_abs_m
+                    );
+                }
+            }
+            for (&l, &peak) in &summary.peaks {
+                println!("peak L={l} T={peak:.6}");
+            }
+            if let Some(tc) = summary.critical_temperature {
+                let deviation = 100.0 * (tc - 2.26919) / 2.26919;
+                println!("T_c={tc:.6} Onsager=2.269190 deviation={deviation:+.2}%");
+            }
             Ok(())
         }
     }
