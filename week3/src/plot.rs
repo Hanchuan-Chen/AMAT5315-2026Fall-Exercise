@@ -4,6 +4,7 @@ use std::path::Path;
 use plotters::prelude::*;
 
 use crate::AnalysisSummary;
+use crate::integrated_autocorrelation_time;
 
 const TC: f64 = 2.26919;
 
@@ -13,6 +14,73 @@ fn onsager(temperature: f64) -> f64 {
     } else {
         (1.0 - (2.0 / temperature).sinh().powi(-4)).powf(0.125)
     }
+}
+
+pub fn write_tau_plot(summary: &AnalysisSummary, directory: &Path) -> Result<(), Box<dyn Error>> {
+    let path = directory.join("tau.png");
+    let root = BitMapBackend::new(&path, (960, 640)).into_drawing_area();
+    root.fill(&WHITE)?;
+    let curves: Vec<_> = summary
+        .by_size
+        .iter()
+        .map(|(&l, points)| {
+            (
+                l,
+                points
+                    .iter()
+                    .map(|point| {
+                        (
+                            point.temperature,
+                            integrated_autocorrelation_time(
+                                &point
+                                    .magnetizations
+                                    .iter()
+                                    .map(|value| value.abs())
+                                    .collect::<Vec<_>>(),
+                            ),
+                        )
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect();
+    let maximum = curves
+        .iter()
+        .flat_map(|(_, points)| points.iter().map(|(_, tau)| *tau))
+        .fold(1.0_f64, f64::max);
+    let t_min = curves
+        .iter()
+        .flat_map(|(_, points)| points.iter().map(|(temperature, _)| *temperature))
+        .fold(f64::INFINITY, f64::min);
+    let t_max = curves
+        .iter()
+        .flat_map(|(_, points)| points.iter().map(|(temperature, _)| *temperature))
+        .fold(f64::NEG_INFINITY, f64::max);
+    let mut chart = ChartBuilder::on(&root)
+        .caption("Integrated autocorrelation time", ("sans-serif", 32))
+        .margin(24)
+        .x_label_area_size(45)
+        .y_label_area_size(65)
+        .build_cartesian_2d((t_min - 0.05)..(t_max + 0.05), (0.4..maximum * 1.2).log_scale())?;
+    chart
+        .configure_mesh()
+        .x_desc("temperature T")
+        .y_desc("tau_int (sweeps)")
+        .draw()?;
+    for (index, (l, points)) in curves.iter().enumerate() {
+        let color = Palette99::pick(index);
+        chart
+            .draw_series(LineSeries::new(points.iter().copied(), &color))?
+            .label(format!("L={l}"))
+            .legend(move |(x, y)| PathElement::new([(x, y), (x + 20, y)], Palette99::pick(index)));
+    }
+    chart.draw_series([PathElement::new(
+        [(TC, 0.4), (TC, maximum * 1.2)],
+        BLACK.mix(0.5),
+    )])?;
+    chart.configure_series_labels().border_style(BLACK).draw()?;
+    root.present()?;
+    Ok(())
 }
 
 pub fn write_thermodynamic_plots(

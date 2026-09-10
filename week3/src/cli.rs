@@ -76,6 +76,13 @@ enum Command {
         #[arg(default_value = "artifacts")]
         directory: PathBuf,
     },
+    /// Report correlated-sample errors and integrated autocorrelation times.
+    Analyze {
+        #[arg(default_value = "artifacts")]
+        directory: PathBuf,
+        #[arg(long, default_value_t = 50)]
+        blocks: usize,
+    },
 }
 
 pub fn run() -> Result<(), String> {
@@ -211,6 +218,34 @@ pub fn run() -> Result<(), String> {
             if let Some(tc) = summary.critical_temperature {
                 let deviation = 100.0 * (tc - 2.26919) / 2.26919;
                 println!("T_c={tc:.6} Onsager=2.269190 deviation={deviation:+.2}%");
+            }
+            Ok(())
+        }
+        Command::Analyze { directory, blocks } => {
+            if blocks < 2 {
+                return Err("--blocks must be at least 2".into());
+            }
+            let summary = crate::load_analysis(&directory).map_err(|error| error.to_string())?;
+            for (&l, points) in &summary.by_size {
+                for point in points {
+                    let absolute: Vec<_> = point
+                        .magnetizations
+                        .iter()
+                        .map(|value| value.abs())
+                        .collect();
+                    let naive = crate::naive_error(&absolute);
+                    let blocked = crate::blocked_error(&absolute, blocks);
+                    let ratio = if naive > 0.0 { blocked / naive } else { 1.0 };
+                    let tau = crate::integrated_autocorrelation_time(&absolute);
+                    println!(
+                        "L={l} T={:.2} mean_abs_m={:.6} naive={naive:.6e} blocked={blocked:.6e} ratio={ratio:.2} tau_int={tau:.2}",
+                        point.temperature, point.mean_abs_m
+                    );
+                }
+            }
+            crate::write_tau_plot(&summary, &directory).map_err(|error| error.to_string())?;
+            if let Some(tc) = summary.critical_temperature {
+                println!("T_c={tc:.6} Onsager=2.269190");
             }
             Ok(())
         }

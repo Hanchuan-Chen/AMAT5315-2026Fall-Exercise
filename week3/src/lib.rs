@@ -19,4 +19,4 @@ pub use temperature_sweep::{
     TemperatureSweepConfig, TemperatureSweepSummary, course_temperature_grid,
     write_temperature_sweep,
 };
-pub use plot::write_thermodynamic_plots;
+pub use plot::{write_tau_plot, write_thermodynamic_plots};
