@@ -42,14 +42,19 @@ impl Lattice {
         self.spins[site]
     }
 
-    fn neighbour_sum(&self, site: usize) -> i32 {
+    pub fn neighbours(&self, site: usize) -> [usize; 4] {
         let row = site / self.l;
         let col = site % self.l;
-        let up = ((row + self.l - 1) % self.l) * self.l + col;
-        let down = ((row + 1) % self.l) * self.l + col;
-        let left = row * self.l + (col + self.l - 1) % self.l;
-        let right = row * self.l + (col + 1) % self.l;
-        [up, down, left, right]
+        [
+            ((row + self.l - 1) % self.l) * self.l + col,
+            ((row + 1) % self.l) * self.l + col,
+            row * self.l + (col + self.l - 1) % self.l,
+            row * self.l + (col + 1) % self.l,
+        ]
+    }
+
+    fn neighbour_sum(&self, site: usize) -> i32 {
+        self.neighbours(site)
             .into_iter()
             .map(|index| i32::from(self.spins[index]))
             .sum()
