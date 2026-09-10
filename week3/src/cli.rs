@@ -2,7 +2,10 @@ use clap::{Parser, Subcommand};
 
 use std::path::PathBuf;
 
-use crate::{RelaxConfig, SnapshotConfig, relax, write_snapshots};
+use crate::{
+    RelaxConfig, SnapshotConfig, TemperatureSweepConfig, course_temperature_grid, relax,
+    write_snapshots, write_temperature_sweep,
+};
 
 #[derive(Debug, Parser)]
 #[command(name = "ising", about = "Two-dimensional Ising Monte Carlo simulator")]
@@ -46,6 +49,27 @@ enum Command {
         seed: u64,
         #[arg(long, default_value = "artifacts/spins.jsonl")]
         output: PathBuf,
+    },
+    /// Measure raw magnetization and energy across a temperature grid.
+    Sweep {
+        #[arg(long, value_delimiter = ',', default_value = "32,64")]
+        sizes: Vec<usize>,
+        #[arg(long, value_delimiter = ',')]
+        temperatures: Option<Vec<f64>>,
+        #[arg(long, default_value_t = 2000)]
+        equilibrate: usize,
+        #[arg(long, default_value_t = 5000)]
+        measure: usize,
+        #[arg(long, default_value_t = 100_000)]
+        measure_critical: usize,
+        #[arg(long, default_value_t = 2.0)]
+        critical_low: f64,
+        #[arg(long, default_value_t = 2.6)]
+        critical_high: f64,
+        #[arg(long, default_value_t = 42)]
+        seed: u64,
+        #[arg(long, default_value = "artifacts")]
+        output_dir: PathBuf,
     },
 }
 
@@ -121,6 +145,47 @@ pub fn run() -> Result<(), String> {
                 summary.sweeps,
                 output.display()
             );
+            Ok(())
+        }
+        Command::Sweep {
+            sizes,
+            temperatures,
+            equilibrate,
+            measure,
+            measure_critical,
+            critical_low,
+            critical_high,
+            seed,
+            output_dir,
+        } => {
+            if sizes.is_empty() || sizes.iter().any(|&l| l < 2) {
+                return Err("all lattice sizes must be at least 2".into());
+            }
+            let temperatures = temperatures.unwrap_or_else(course_temperature_grid);
+            if temperatures.is_empty()
+                || temperatures
+                    .iter()
+                    .any(|temperature| !temperature.is_finite() || *temperature <= 0.0)
+                || temperatures.windows(2).any(|pair| pair[0] >= pair[1])
+            {
+                return Err("temperatures must be finite, positive, and strictly ascending".into());
+            }
+            if measure == 0 || measure_critical == 0 {
+                return Err("measurement sweep counts must be positive".into());
+            }
+            let summary = write_temperature_sweep(&TemperatureSweepConfig {
+                sizes,
+                temperatures,
+                equilibration_sweeps: equilibrate,
+                measurement_sweeps: measure,
+                critical_measurement_sweeps: measure_critical,
+                critical_low,
+                critical_high,
+                seed,
+                output_dir: output_dir.clone(),
+            })
+            .map_err(|error| error.to_string())?;
+            println!("sweep rows={} output={}", summary.rows, output_dir.display());
             Ok(())
         }
     }
