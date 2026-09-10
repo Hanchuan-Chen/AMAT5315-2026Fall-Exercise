@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use crate::{
     RelaxConfig, SnapshotConfig, TemperatureSweepConfig, course_temperature_grid, relax,
-    write_snapshots, write_temperature_sweep,
+    write_snapshots, write_temperature_sweep, write_wolff_temperature_sweep,
 };
 
 #[derive(Debug, Parser)]
@@ -52,6 +52,8 @@ enum Command {
     },
     /// Measure raw magnetization and energy across a temperature grid.
     Sweep {
+        #[arg(long)]
+        wolff: bool,
         #[arg(long, value_delimiter = ',', default_value = "32,64")]
         sizes: Vec<usize>,
         #[arg(long, value_delimiter = ',')]
@@ -68,8 +70,8 @@ enum Command {
         critical_high: f64,
         #[arg(long, default_value_t = 42)]
         seed: u64,
-        #[arg(long, default_value = "artifacts")]
-        output_dir: PathBuf,
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
     },
     /// Draw thermodynamic plots and print the finite-size critical estimate.
     Plot {
@@ -160,6 +162,7 @@ pub fn run() -> Result<(), String> {
             Ok(())
         }
         Command::Sweep {
+            wolff,
             sizes,
             temperatures,
             equilibrate,
@@ -173,7 +176,16 @@ pub fn run() -> Result<(), String> {
             if sizes.is_empty() || sizes.iter().any(|&l| l < 2) {
                 return Err("all lattice sizes must be at least 2".into());
             }
-            let temperatures = temperatures.unwrap_or_else(course_temperature_grid);
+            let temperatures = temperatures.unwrap_or_else(|| {
+                if wolff {
+                    (200..=260)
+                        .step_by(5)
+                        .map(|value| value as f64 / 100.0)
+                        .collect()
+                } else {
+                    course_temperature_grid()
+                }
+            });
             if temperatures.is_empty()
                 || temperatures
                     .iter()
@@ -185,7 +197,10 @@ pub fn run() -> Result<(), String> {
             if measure == 0 || measure_critical == 0 {
                 return Err("measurement sweep counts must be positive".into());
             }
-            let summary = write_temperature_sweep(&TemperatureSweepConfig {
+            let output_dir = output_dir.unwrap_or_else(|| {
+                PathBuf::from(if wolff { "artifacts-wolff" } else { "artifacts" })
+            });
+            let config = TemperatureSweepConfig {
                 sizes,
                 temperatures,
                 equilibration_sweeps: equilibrate,
@@ -195,7 +210,12 @@ pub fn run() -> Result<(), String> {
                 critical_high,
                 seed,
                 output_dir: output_dir.clone(),
-            })
+            };
+            let summary = if wolff {
+                write_wolff_temperature_sweep(&config)
+            } else {
+                write_temperature_sweep(&config)
+            }
             .map_err(|error| error.to_string())?;
             println!("sweep rows={} output={}", summary.rows, output_dir.display());
             Ok(())
