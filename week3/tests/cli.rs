@@ -41,6 +41,30 @@ fn snapshots_accepts_tunable_protocol_values() {
 }
 
 #[test]
+fn sweep_accepts_tunable_protocol_values() {
+    let directory = tempdir().unwrap();
+    Command::cargo_bin("ising")
+        .expect("binary")
+        .args([
+            "sweep", "--sizes", "4", "--temperatures", "1.5,2.0",
+            "--equilibrate", "1", "--measure", "2", "--measure-critical", "3",
+            "--critical-low", "2.0", "--critical-high", "2.6", "--seed", "9",
+            "--output-dir",
+        ])
+        .arg(directory.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("rows=5"));
+    assert_eq!(
+        std::fs::read_to_string(directory.path().join("series.jsonl"))
+            .unwrap()
+            .lines()
+            .count(),
+        5
+    );
+}
+
+#[test]
 fn relax_rejects_invalid_physical_parameters() {
     for args in [
         vec!["relax", "--l", "0", "--t", "2.3", "--measure", "1"],
