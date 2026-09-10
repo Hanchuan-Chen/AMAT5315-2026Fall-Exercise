@@ -10,8 +10,8 @@ mod temperature_sweep;
 
 pub use lattice::Lattice;
 pub use analysis::{
-    AnalysisSummary, ObservablePoint, critical_temperature, load_analysis, quadratic_peak,
-    susceptibility,
+    AnalysisSummary, ObservablePoint, blocked_error, critical_temperature,
+    integrated_autocorrelation_time, load_analysis, naive_error, quadratic_peak, susceptibility,
 };
 pub use metropolis::{AcceptanceTable, RelaxConfig, RelaxResult, SweepStats, relax, sweep};
 pub use snapshots::{SnapshotConfig, SnapshotSummary, write_snapshots};

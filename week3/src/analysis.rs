@@ -5,6 +5,79 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use serde::Deserialize;
+use rustfft::FftPlanner;
+use rustfft::num_complex::Complex;
+
+fn sample_standard_deviation(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
+    let mean = values.iter().sum::<f64>() / values.len() as f64;
+    (values
+        .iter()
+        .map(|value| (value - mean).powi(2))
+        .sum::<f64>()
+        / (values.len() - 1) as f64)
+        .sqrt()
+}
+
+pub fn naive_error(values: &[f64]) -> f64 {
+    sample_standard_deviation(values) / (values.len() as f64).sqrt()
+}
+
+pub fn blocked_error(values: &[f64], block_count: usize) -> f64 {
+    if block_count < 2 || values.len() < block_count {
+        return naive_error(values);
+    }
+    let block_length = values.len() / block_count;
+    let means: Vec<_> = (0..block_count)
+        .map(|block| {
+            let start = block * block_length;
+            values[start..start + block_length].iter().sum::<f64>() / block_length as f64
+        })
+        .collect();
+    naive_error(&means)
+}
+
+pub fn integrated_autocorrelation_time(values: &[f64]) -> f64 {
+    let n = values.len();
+    if n == 0 {
+        return 0.5;
+    }
+    let mean = values.iter().sum::<f64>() / n as f64;
+    let centered: Vec<_> = values.iter().map(|value| value - mean).collect();
+    let variance = centered.iter().map(|value| value * value).sum::<f64>() / n as f64;
+    if variance == 0.0 {
+        return 0.5;
+    }
+
+    let fft_len = (2 * n).next_power_of_two();
+    let mut spectrum = vec![Complex::new(0.0, 0.0); fft_len];
+    for (slot, &value) in spectrum.iter_mut().zip(&centered) {
+        slot.re = value;
+    }
+    let mut planner = FftPlanner::new();
+    planner.plan_fft_forward(fft_len).process(&mut spectrum);
+    for value in &mut spectrum {
+        *value = Complex::new(value.norm_sqr(), 0.0);
+    }
+    planner.plan_fft_inverse(fft_len).process(&mut spectrum);
+
+    let denominator = variance * n as f64 * fft_len as f64;
+    let mut tau = 0.5;
+    let maximum_lag = (n / 4).min(5000);
+    for (lag, covariance) in spectrum.iter().enumerate().take(maximum_lag).skip(1) {
+        let acf = covariance.re / denominator;
+        if acf < 0.0 {
+            break;
+        }
+        tau += acf;
+        if lag as f64 >= 6.0 * tau {
+            break;
+        }
+    }
+    tau
+}
 
 pub fn susceptibility(l: usize, temperature: f64, magnetizations: &[f64]) -> f64 {
     let n = magnetizations.len() as f64;
@@ -152,4 +225,3 @@ pub fn load_analysis(directory: &Path) -> Result<AnalysisSummary, Box<dyn Error>
         critical_temperature: tc,
     })
 }
-
