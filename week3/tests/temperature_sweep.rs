@@ -1,6 +1,9 @@
 use std::fs;
 
-use ising::{TemperatureSweepConfig, course_temperature_grid, write_temperature_sweep};
+use ising::{
+    TemperatureSweepConfig, course_temperature_grid, write_temperature_sweep,
+    write_wolff_temperature_sweep,
+};
 use serde_json::Value;
 use tempfile::tempdir;
 
@@ -70,4 +73,22 @@ fn sweep_is_byte_reproducible() {
     write_temperature_sweep(&small_config(second.clone())).unwrap();
     assert_eq!(fs::read(first.join("series.jsonl")).unwrap(),
                fs::read(second.join("series.jsonl")).unwrap());
+}
+
+#[test]
+fn wolff_sweep_reuses_the_contract_and_labels_the_algorithm() {
+    let directory = tempdir().unwrap();
+    write_wolff_temperature_sweep(&small_config(directory.path().into())).unwrap();
+    let run: Value = serde_json::from_str(
+        &fs::read_to_string(directory.path().join("run.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(run["algorithm"], "wolff");
+    assert_eq!(
+        fs::read_to_string(directory.path().join("series.jsonl"))
+            .unwrap()
+            .lines()
+            .count(),
+        5
+    );
 }
