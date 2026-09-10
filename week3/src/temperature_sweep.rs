@@ -7,7 +7,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 use serde::Serialize;
 
-use crate::{AcceptanceTable, Lattice, sweep};
+use crate::{AcceptanceTable, Lattice, sweep, wolff_sweep};
 
 pub fn course_temperature_grid() -> Vec<f64> {
     let mut hundredths: Vec<i32> = (150..=350).step_by(10).collect();
@@ -66,6 +66,19 @@ pub struct TemperatureSweepSummary {
 pub fn write_temperature_sweep(
     config: &TemperatureSweepConfig,
 ) -> Result<TemperatureSweepSummary, Box<dyn Error>> {
+    write_sweep_with_algorithm(config, "metropolis")
+}
+
+pub fn write_wolff_temperature_sweep(
+    config: &TemperatureSweepConfig,
+) -> Result<TemperatureSweepSummary, Box<dyn Error>> {
+    write_sweep_with_algorithm(config, "wolff")
+}
+
+fn write_sweep_with_algorithm(
+    config: &TemperatureSweepConfig,
+    algorithm: &'static str,
+) -> Result<TemperatureSweepSummary, Box<dyn Error>> {
     fs::create_dir_all(&config.output_dir)?;
     let run = RunContract {
         sizes: &config.sizes,
@@ -75,7 +88,7 @@ pub fn write_temperature_sweep(
         meas_sweeps_critical: config.critical_measurement_sweeps,
         sample_every: 1,
         seed: config.seed,
-        algorithm: "metropolis",
+        algorithm,
     };
     serde_json::to_writer_pretty(
         BufWriter::new(File::create(config.output_dir.join("run.json"))?),
@@ -91,7 +104,11 @@ pub fn write_temperature_sweep(
         for &temperature in &config.temperatures {
             let table = AcceptanceTable::new(temperature);
             for _ in 0..config.equilibration_sweeps {
-                sweep(&mut lattice, &table, &mut rng);
+                if algorithm == "wolff" {
+                    wolff_sweep(&mut lattice, temperature, &mut rng);
+                } else {
+                    sweep(&mut lattice, &table, &mut rng);
+                }
             }
             let in_critical_window = temperature >= config.critical_low - 1e-9
                 && temperature <= config.critical_high + 1e-9;
@@ -101,7 +118,11 @@ pub fn write_temperature_sweep(
                 config.measurement_sweeps
             };
             for measurement_sweep in 0..measurements {
-                sweep(&mut lattice, &table, &mut rng);
+                if algorithm == "wolff" {
+                    wolff_sweep(&mut lattice, temperature, &mut rng);
+                } else {
+                    sweep(&mut lattice, &table, &mut rng);
+                }
                 writeln!(
                     writer,
                     "{{\"L\":{l},\"T\":{temperature},\"sweep\":{measurement_sweep},\"M\":{:.6},\"E\":{:.6}}}",
