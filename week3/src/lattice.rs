@@ -104,5 +104,12 @@ impl Lattice {
         }
         output
     }
+
+    pub fn spins_binary(&self) -> String {
+        self.spins
+            .iter()
+            .map(|&spin| if spin == 1 { '1' } else { '0' })
+            .collect()
+    }
 }
 
