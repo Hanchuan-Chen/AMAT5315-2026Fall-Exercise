@@ -42,20 +42,26 @@ fn energy_matches_a_brute_force_bond_sum() {
         assert_eq!(down.energy(), brute_force_energy(l, down.spins()));
         assert_eq!(down.energy(), -2 * (l * l) as i64);
 
-        // A checkerboard disagrees on every bond, so every bond costs +1.
+        // An even checkerboard disagrees on every bond, so every bond costs +1.
+        // An odd side has a frustrated wrap seam: those bonds agree instead.
         let checker: Vec<i8> = (0..l * l)
             .map(|k| if (k / l + k % l) % 2 == 0 { 1 } else { -1 })
             .collect();
         let checker = Lattice::from_spins(l, checker).unwrap();
-        assert_eq!(checker.energy(), 2 * (l * l) as i64);
-        assert_eq!(checker.energy_per_site(), 2.0);
+        if l % 2 == 0 {
+            assert_eq!(checker.energy(), 2 * (l * l) as i64);
+            assert_eq!(checker.energy_per_site(), 2.0);
+        }
         assert_eq!(checker.energy(), brute_force_energy(l, checker.spins()));
 
         for _ in 0..8 {
             let spins = random_spins(l, &mut rng);
             let lattice = Lattice::from_spins(l, spins.clone()).unwrap();
             assert_eq!(lattice.energy(), brute_force_energy(l, &spins));
-            assert_eq!(lattice.energy_per_site(), lattice.energy() as f64 / (l * l) as f64);
+            assert_eq!(
+                lattice.energy_per_site(),
+                lattice.energy() as f64 / (l * l) as f64
+            );
         }
     }
 }
@@ -209,8 +215,9 @@ fn magnetization_is_the_signed_mean_spin() {
     spins[0] = -1;
     spins[5] = -1;
     let lattice = Lattice::from_spins(l, spins).unwrap();
-    assert_eq!(lattice.magnetization(), 14.0 / 16.0);
-    assert_eq!(lattice.abs_magnetization(), 14.0 / 16.0);
+    // Sixteen spins, two of them down: the mean is 14/16 minus 2/16.
+    assert_eq!(lattice.magnetization(), 12.0 / 16.0);
+    assert_eq!(lattice.abs_magnetization(), 12.0 / 16.0);
 
     let mut flipped = lattice.clone();
     for row in 0..l {
@@ -218,8 +225,8 @@ fn magnetization_is_the_signed_mean_spin() {
             flipped.flip(row, col);
         }
     }
-    assert_eq!(flipped.magnetization(), -14.0 / 16.0);
-    assert_eq!(flipped.abs_magnetization(), 14.0 / 16.0);
+    assert_eq!(flipped.magnetization(), -12.0 / 16.0);
+    assert_eq!(flipped.abs_magnetization(), 12.0 / 16.0);
 }
 
 #[test]
