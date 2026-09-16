@@ -256,6 +256,24 @@ def main() -> None:
         name: chi_bootstrap.stability_verdict(e_bars[name])[0] for name in SAMPLERS
     }
     energy_verdict = agreement_verdict(d_energy, energy_stable)
+    spread_table = []
+    for name, m_series, e_series in (
+        ("metropolis", metropolis[t_compare], energy_metropolis[t_compare]),
+        ("wolff", wolff[t_compare], energy_wolff[t_compare]),
+    ):
+        for observable, series in (
+            ("|m|", np.abs(m_series)),
+            ("E", e_series),
+        ):
+            spread_table.append(
+                (
+                    name,
+                    observable,
+                    float(series.mean()),
+                    float(series.std(ddof=1)),
+                    errors.tau_int(series),
+                )
+            )
 
     # The cluster susceptibility and its peaks come from the same window rows
     # the cluster bootstrap resamples, through the same fit Part 2 used.
@@ -457,9 +475,20 @@ def main() -> None:
     lines.append(
         "  A single matching mean does not establish that the two chains sample"
         " the same distribution, so the energy -- not the order parameter -- is"
-        " checked as well. Energy decorrelates faster than |m| at the transition,"
-        " which is why its bootstrap errors are the smaller pair here."
+        " checked as well. The energy's error bar is the smaller one mostly"
+        " because its spread is smaller; the two samplers' own clocks are in the"
+        " table below, where a Wolff row counts moves and a Metropolis row counts"
+        " sweeps."
     )
+    lines.append(
+        f"    {'sampler':>11}  {'observable':>10}  {'mean':>10}  {'sd':>8}"
+        f"  {'tau_int':>9}"
+    )
+    for name, observable, mean, spread, tau in spread_table:
+        lines.append(
+            f"    {name:>11}  {observable:>10}  {mean:>10.4f}  {spread:>8.4f}"
+            f"  {tau:>9.3f}"
+        )
     lines.append("")
     lines.append("(2) the cluster critical temperature")
     lines.append("")

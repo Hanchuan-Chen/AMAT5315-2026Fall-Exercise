@@ -22,7 +22,12 @@ L = 64, critical window 2.00 .. 2.60 (13 temperatures). Metropolis rows come fro
   machine-readable mean(E): metropolis -1.3622, wolff -1.3561 (difference -0.0062)
     2000-step: metropolis 0.00314, wolff 0.00069  4000-step: metropolis 0.00359, wolff 0.00074  8000-step: metropolis 0.00334, wolff 0.00082
   d(E) = 1.79 with the 8000-step errors; verdict: agreement provisional: d = 1.79 <= 3, but the metropolis and wolff errors still depend on the block length
-  A single matching mean does not establish that the two chains sample the same distribution, so the energy -- not the order parameter -- is checked as well. Energy decorrelates faster than |m| at the transition, which is why its bootstrap errors are the smaller pair here.
+  A single matching mean does not establish that the two chains sample the same distribution, so the energy -- not the order parameter -- is checked as well. The energy's error bar is the smaller one mostly because its spread is smaller; the two samplers' own clocks are in the table below, where a Wolff row counts moves and a Metropolis row counts sweeps.
+        sampler  observable        mean        sd    tau_int
+     metropolis         |m|      0.4724    0.1905    607.715
+     metropolis           E     -1.3622    0.0537    219.400
+          wolff         |m|      0.4350    0.1973      4.476
+          wolff           E     -1.3561    0.0521      9.553
 
 (2) the cluster critical temperature
 
