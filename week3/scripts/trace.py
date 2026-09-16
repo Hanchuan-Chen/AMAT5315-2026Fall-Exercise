@@ -92,6 +92,11 @@ def main() -> None:
         "$|m|$ sweep by sweep at $L$ = 64,"
         f" the first {NSHOW} measured sweeps"
     )
+    axes.set_xlabel(
+        "measurement sweep\n"
+        f"(T = 2.3 from {SOURCES[0][1]}; T = 3.0 from {SOURCES[1][1]},"
+        " the window grid stops at 2.6)"
+    )
     axes.grid(alpha=0.25, linewidth=0.6)
     axes.legend(loc="upper right", frameon=True, fontsize=9)
     figure.tight_layout()
