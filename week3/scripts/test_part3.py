@@ -57,12 +57,19 @@ class ErrorBarTests(unittest.TestCase):
 
     def test_block_stderr_is_the_sem_of_fifty_means(self) -> None:
         # 100 samples in 50 pairs: block means are 1.5, 3.5, ..., 99.5, an
-        # arithmetic sequence whose SEM is known exactly.
+        # arithmetic sequence whose standard error is known in closed form.
         a = np.arange(1.0, 101.0)
         blocks = a.reshape(50, 2).mean(axis=1)
         expected = float(np.std(blocks, ddof=1) / math.sqrt(50))
         self.assertAlmostEqual(errors.block_stderr(a, 50), expected, places=15)
-        self.assertAlmostEqual(expected, math.sqrt(2.0), places=15)
+        # The block means 1.5, 3.5, ... 99.5 are the odd offsets -49 .. 49
+        # around 50.5, so their sample variance is 2 * sum(odd^2) / 49 = 850
+        # and their SEM is sqrt(850 / 50) = sqrt(17).
+        self.assertAlmostEqual(expected, math.sqrt(17.0), places=15)
+
+    def test_block_stderr_of_two_constant_blocks_is_one(self) -> None:
+        # Block means 0 and 2 have sd sqrt(2), so their SEM over two blocks is 1.
+        self.assertAlmostEqual(errors.block_stderr(np.array([0.0, 0.0, 2.0, 2.0]), 2), 1.0, places=15)
 
     def test_block_stderr_with_one_block_per_sample_is_the_naive_error(self) -> None:
         a = np.array([0.4, 0.9, 0.1, 0.7, 0.5, 0.2])
@@ -71,7 +78,7 @@ class ErrorBarTests(unittest.TestCase):
         )
 
     def test_block_stderr_of_a_constant_series_is_zero(self) -> None:
-        self.assertEqual(errors.block_stderr(np.full(100, 0.42), 50), 0.0)
+        self.assertAlmostEqual(errors.block_stderr(np.full(100, 0.42), 50), 0.0, places=14)
 
     def test_binning_curve_starts_at_the_naive_error(self) -> None:
         # An AR(1) series with phi = 0.9 has tau_int near 9.5, so 100-sweep
@@ -84,7 +91,7 @@ class ErrorBarTests(unittest.TestCase):
         for k in range(1, 20000):
             a[k] = 0.9 * a[k - 1] + noise[k]
         curve = errors.binning_curve(a, [1, 2, 4, 100])
-        self.assertEqual([b for b, _ in curve], [1, 2, 4, 100])
+        self.assertEqual([b for b, _, _ in curve], [1, 2, 4, 100])
         self.assertEqual([nb for _, nb, _ in curve], [20000, 10000, 5000, 200])
         self.assertAlmostEqual(curve[0][2], errors.naive_stderr(a), places=15)
         self.assertLess(curve[0][2], curve[-1][2])
@@ -125,12 +132,18 @@ class AutocorrelationTests(unittest.TestCase):
 
 class TauIntTruncationTests(unittest.TestCase):
     def test_geometric_rho_sums_to_the_closed_form(self) -> None:
-        # rho(t) = phi^t, phi = 0.9, so tau_int = 1/2 + phi/(1 - phi) = 9.5,
-        # and with 1/2 + 0.9/(0.1) the six-times rule stops at
-        # t >= 6 * 9.5 = 57, past the end of the array, so nothing truncates.
+        # rho(t) = phi^t, phi = 0.9, so the untruncated tau_int would be
+        # 1/2 + phi/(1 - phi) = 9.5. The six-times rule fires first: after
+        # t terms the running total is 0.5 + 9 (1 - 0.9^t), and
+        # 6 * (0.5 + 9 (1 - 0.9^56)) = 56.7 > 56 while
+        # 6 * (0.5 + 9 (1 - 0.9^57)) = 56.87 <= 57, so the loop stops at
+        # t = 57 and the answer is 1/2 + sum_{t=1}^{57} 0.9^t.
         phi = 0.9
         rho = np.array([1.0] + [phi**t for t in range(1, 80)])
-        self.assertAlmostEqual(errors.tau_int_from_rho(rho), 9.5, places=10)
+        expected = 0.5 + sum(phi**t for t in range(1, 58))
+        self.assertAlmostEqual(errors.tau_int_from_rho(rho), expected, places=12)
+        self.assertLess(errors.tau_int_from_rho(rho), 9.5)
+        self.assertGreater(errors.tau_int_from_rho(rho), 9.47)
 
     def test_constant_positive_tail_trips_the_six_times_rule(self) -> None:
         # rho(t) = 0.02 for every t >= 1. After adding t terms the running
