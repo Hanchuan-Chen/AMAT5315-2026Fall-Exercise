@@ -28,14 +28,18 @@ const SHARED: [&str; 16] = [
 fn run(seed: &str) -> (TempDir, PathBuf) {
     let dir = TempDir::new().expect("temp dir");
     let out = dir.path().join("out");
-    let status = Command::new(env!("CARGO_BIN_EXE_ising"))
+    let output = Command::new(env!("CARGO_BIN_EXE_ising"))
         .args(SHARED)
         .args(["--seed", seed])
         .arg("--out")
         .arg(&out)
-        .status()
+        .output()
         .expect("ising runs");
-    assert!(status.success(), "seed {seed} failed");
+    assert!(
+        output.status.success(),
+        "seed {seed} failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     (dir, out)
 }
 

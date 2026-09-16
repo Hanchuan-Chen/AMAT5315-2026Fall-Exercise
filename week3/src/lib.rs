@@ -11,4 +11,4 @@ pub mod metropolis;
 pub mod ramp;
 
 pub use lattice::Lattice;
-pub use ramp::{temperature_grid, RunConfig, TemperatureResult, Update};
+pub use ramp::{RunConfig, TemperatureResult, Update, temperature_grid};

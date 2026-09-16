@@ -71,9 +71,7 @@ fn field_text<'a>(line: &'a str, key: &str) -> &'a str {
     let needle = format!("\"{key}\":");
     let start = line.find(&needle).expect("key is present") + needle.len();
     let rest = &line[start..];
-    let end = rest
-        .find(|c: char| c == ',' || c == '}')
-        .expect("field ends");
+    let end = rest.find([',', '}']).expect("field ends");
     &rest[..end]
 }
 
@@ -85,12 +83,7 @@ fn decimal_digits(text: &str) -> usize {
 }
 
 fn sorted_keys(value: &Value) -> Vec<String> {
-    let mut keys: Vec<String> = value
-        .as_object()
-        .expect("object")
-        .keys()
-        .cloned()
-        .collect();
+    let mut keys: Vec<String> = value.as_object().expect("object").keys().cloned().collect();
     keys.sort();
     keys
 }
@@ -98,14 +91,22 @@ fn sorted_keys(value: &Value) -> Vec<String> {
 #[test]
 fn stdout_has_the_contract_header_and_one_row_per_temperature() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.2",
-        "--t-step", "0.1",
-        "--discard", "3",
-        "--measure", "5",
-        "--seed", "7",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.2",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "5",
+        "--seed",
+        "7",
     ]);
     assert_eq!(finished.code(), Some(0), "stderr: {}", finished.stderr());
 
@@ -117,7 +118,10 @@ fn stdout_has_the_contract_header_and_one_row_per_temperature() {
         let fields: Vec<&str> = line.split('\t').collect();
         assert_eq!(fields.len(), 3, "row {line:?}");
         let t: f64 = fields[0].parse().expect("temperature is a number");
-        assert!((t - (2.0 + 0.1 * index as f64)).abs() < 1e-9, "row {line:?}");
+        assert!(
+            (t - (2.0 + 0.1 * index as f64)).abs() < 1e-9,
+            "row {line:?}"
+        );
         assert_eq!(decimal_digits(fields[0]), 3, "row {line:?}");
         let mean_m: f64 = fields[1].parse().expect("mean |M| is a number");
         let acceptance: f64 = fields[2].parse().expect("acceptance is a number");
@@ -131,14 +135,22 @@ fn stdout_has_the_contract_header_and_one_row_per_temperature() {
 #[test]
 fn run_json_carries_exactly_the_contract_fields() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.2",
-        "--t-step", "0.1",
-        "--discard", "3",
-        "--measure", "5",
-        "--seed", "7",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.2",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "5",
+        "--seed",
+        "7",
     ]);
     let value = finished.json("run.json");
     assert_eq!(
@@ -173,14 +185,22 @@ fn run_json_carries_exactly_the_contract_fields() {
 #[test]
 fn series_rows_restart_at_one_at_each_temperature() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.2",
-        "--t-step", "0.1",
-        "--discard", "3",
-        "--measure", "5",
-        "--seed", "7",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.2",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "5",
+        "--seed",
+        "7",
     ]);
     let rows = finished.jsonl("series.jsonl");
     assert_eq!(rows.len(), 15);
@@ -212,14 +232,22 @@ fn series_rows_restart_at_one_at_each_temperature() {
 #[test]
 fn series_text_rounds_m_and_e_to_six_decimals() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.1",
-        "--t-step", "0.1",
-        "--discard", "2",
-        "--measure", "4",
-        "--seed", "11",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.1",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "2",
+        "--measure",
+        "4",
+        "--seed",
+        "11",
     ]);
     let text = finished.text("series.jsonl");
     assert_eq!(text.lines().count(), 8);
@@ -238,15 +266,24 @@ fn series_text_rounds_m_and_e_to_six_decimals() {
 #[test]
 fn spins_rows_carry_the_contract_keys_and_l_squared_spins() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.1",
-        "--t-step", "0.1",
-        "--discard", "3",
-        "--measure", "8",
-        "--every", "2",
-        "--seed", "2026",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.1",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "8",
+        "--every",
+        "2",
+        "--seed",
+        "2026",
     ]);
     let text = finished.text("spins.jsonl");
     assert_eq!(text.lines().count(), 8);
@@ -308,15 +345,24 @@ fn spins_jsonl_is_written_only_when_every_is_positive() {
 #[test]
 fn spins_sweep_counts_the_whole_ramp_including_discard() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.2",
-        "--t-step", "0.1",
-        "--discard", "3",
-        "--measure", "8",
-        "--every", "2",
-        "--seed", "2026",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.2",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "8",
+        "--every",
+        "2",
+        "--seed",
+        "2026",
     ]);
     let frames: Vec<u64> = finished
         .jsonl("spins.jsonl")
@@ -337,15 +383,24 @@ fn spins_sweep_counts_the_whole_ramp_including_discard() {
 #[test]
 fn frame_spins_agree_with_the_series_row_at_the_same_step() {
     let finished = run(&[
-        "--update", "metropolis",
-        "--l", "4",
-        "--t-from", "2.0",
-        "--t-to", "2.0",
-        "--t-step", "0.1",
-        "--discard", "3",
-        "--measure", "8",
-        "--every", "2",
-        "--seed", "2026",
+        "--update",
+        "metropolis",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.0",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "8",
+        "--every",
+        "2",
+        "--seed",
+        "2026",
     ]);
     let series = finished.jsonl("series.jsonl");
     let frames = finished.jsonl("spins.jsonl");
@@ -437,24 +492,94 @@ fn temperature_grid_follows_the_inclusion_rule() {
 fn invalid_settings_fail_before_any_file_is_written() {
     let cases: [&[&str]; 5] = [
         &[
-            "--update", "metropolis", "--l", "1", "--t-from", "2.0", "--t-to", "2.0", "--t-step",
-            "0.1", "--discard", "0", "--measure", "1", "--seed", "1",
+            "--update",
+            "metropolis",
+            "--l",
+            "1",
+            "--t-from",
+            "2.0",
+            "--t-to",
+            "2.0",
+            "--t-step",
+            "0.1",
+            "--discard",
+            "0",
+            "--measure",
+            "1",
+            "--seed",
+            "1",
         ],
         &[
-            "--update", "metropolis", "--l", "4", "--t-from", "2.0", "--t-to", "2.0", "--t-step",
-            "0", "--discard", "0", "--measure", "1", "--seed", "1",
+            "--update",
+            "metropolis",
+            "--l",
+            "4",
+            "--t-from",
+            "2.0",
+            "--t-to",
+            "2.0",
+            "--t-step",
+            "0",
+            "--discard",
+            "0",
+            "--measure",
+            "1",
+            "--seed",
+            "1",
         ],
         &[
-            "--update", "metropolis", "--l", "4", "--t-from", "3.0", "--t-to", "2.0", "--t-step",
-            "0.1", "--discard", "0", "--measure", "1", "--seed", "1",
+            "--update",
+            "metropolis",
+            "--l",
+            "4",
+            "--t-from",
+            "3.0",
+            "--t-to",
+            "2.0",
+            "--t-step",
+            "0.1",
+            "--discard",
+            "0",
+            "--measure",
+            "1",
+            "--seed",
+            "1",
         ],
         &[
-            "--update", "metropolis", "--l", "4", "--t-from", "2.0", "--t-to", "2.0", "--t-step",
-            "0.1", "--discard", "0", "--measure", "0", "--seed", "1",
+            "--update",
+            "metropolis",
+            "--l",
+            "4",
+            "--t-from",
+            "2.0",
+            "--t-to",
+            "2.0",
+            "--t-step",
+            "0.1",
+            "--discard",
+            "0",
+            "--measure",
+            "0",
+            "--seed",
+            "1",
         ],
         &[
-            "--update", "metropolis", "--l", "4", "--t-from", "0.0", "--t-to", "2.0", "--t-step",
-            "0.1", "--discard", "0", "--measure", "1", "--seed", "1",
+            "--update",
+            "metropolis",
+            "--l",
+            "4",
+            "--t-from",
+            "0.0",
+            "--t-to",
+            "2.0",
+            "--t-step",
+            "0.1",
+            "--discard",
+            "0",
+            "--measure",
+            "1",
+            "--seed",
+            "1",
         ],
     ];
     for case in cases {
@@ -465,23 +590,54 @@ fn invalid_settings_fail_before_any_file_is_written() {
             "case {case:?}: {}",
             finished.stderr()
         );
-        assert!(!finished.out.exists(), "case {case:?} created its output folder");
+        assert!(
+            !finished.out.exists(),
+            "case {case:?} created its output folder"
+        );
     }
 }
 
 #[test]
 fn wolff_parses_but_lands_in_a_later_phase() {
     let later = run(&[
-        "--update", "wolff", "--l", "4", "--t-from", "2.0", "--t-to", "2.0", "--t-step", "0.1",
-        "--discard", "0", "--measure", "1", "--seed", "1",
+        "--update",
+        "wolff",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.0",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "0",
+        "--measure",
+        "1",
+        "--seed",
+        "1",
     ]);
     assert_eq!(later.code(), Some(1));
     assert!(later.stderr().contains("wolff"), "{}", later.stderr());
     assert!(!later.exists("run.json"));
 
     let unknown = run(&[
-        "--update", "glauber", "--l", "4", "--t-from", "2.0", "--t-to", "2.0", "--t-step", "0.1",
-        "--discard", "0", "--measure", "1", "--seed", "1",
+        "--update",
+        "glauber",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.0",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "0",
+        "--measure",
+        "1",
+        "--seed",
+        "1",
     ]);
     assert_eq!(unknown.code(), Some(2), "{}", unknown.stderr());
 }

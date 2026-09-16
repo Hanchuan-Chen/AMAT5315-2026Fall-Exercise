@@ -64,8 +64,24 @@ pub enum UpdateArg {
 
 impl Args {
     /// Validate the arguments and build the run settings.
+    ///
+    /// Validation runs before the output folder is touched, so a rejected
+    /// command line writes nothing.
     pub fn into_config(self) -> Result<RunConfig, String> {
-        todo!()
+        let config = RunConfig {
+            update: self.update.into(),
+            l: self.l,
+            t_from: self.t_from,
+            t_to: self.t_to,
+            t_step: self.t_step,
+            discard: self.discard,
+            measure: self.measure,
+            seed: self.seed,
+            every: self.every,
+            out: self.out,
+        };
+        config.validate()?;
+        Ok(config)
     }
 }
 
