@@ -83,11 +83,15 @@ the top of the file is the command the Part 1 section runs verbatim:
 usage = "ising --update metropolis --l 64 --t-from 1.5 --t-to 3.5 --t-step 0.05 --discard 2000 --measure 200 --every 20 --seed 2026 --out runs/ramp"
 ```
 
+The contract promises to overwrite the same-named files this run writes and
+nothing more: a reused `--out` folder is not cleaned, so re-running a ramp with
+`--every 0` leaves an earlier run's `spins.jsonl` in place.
+
 ## Part 1: the single-spin sampler and its evidence
 
 ### The runs
 
-All seven runs use `--update metropolis` on an `L = 64` lattice, start from an
+All six runs use `--update metropolis` on an `L = 64` lattice, start from an
 all-up lattice, discard 2000 sweeps and measure 2000 sweeps at each
 temperature:
 
@@ -147,10 +151,13 @@ temperatures; `spins.jsonl` is the largest tracked file at about 3.9 MB.
 reads `runs/T3.0` and `runs/T3.1` and writes `evidence/boltzmann.png`. For two
 temperatures on one lattice the density of states cancels, so
 `ln(P_3.1(E) / P_3.0(E))` is linear in the total energy with slope
-`1/3.0 - 1/3.1 = 0.0107527`. Measured with 40-unit bins: 25 bins, 15 kept;
-free least-squares slope 0.0104153 against the predicted 0.0107527; the ratio
-points sit at most 0.454 (rms 0.205) off the predicted line where both bins
-hold at least 20 sweeps.
+`1/3.0 - 1/3.1 = 0.0107527`. The sheet's check is a per-point distance test
+against that predicted line, not a fit of the slope: where both bins hold at
+least 20 sweeps the ratio points sit at most 0.454 (rms 0.205) off the line,
+and that is the criterion that passes. Measured with 40-unit bins: 25 bins, 15
+kept, and the free least-squares slope over the kept bins is 0.0104153, 3.1%
+below the predicted 0.0107527 -- so the line is verified point by point, not
+by the fitted slope.
 
 ### Viewer proofs
 
@@ -232,7 +239,8 @@ with `T_c` marked; the lattice rounds the transition instead of meeting it.
 .venv/bin/python scripts/chi_bootstrap.py   # -> evidence/chi-bootstrap.png
 ```
 
-All five read `artifacts/` and nothing else (about 8 s in total). `errors.py`
+All five read `artifacts/` and nothing else (about 80 s in total, some 70 s of
+it `chi_bootstrap.py`'s default draw plus its seed sweep). `errors.py`
 owns the estimators: the autocorrelation of `|M|`, the integrated
 autocorrelation time `tau_int = 1/2 + sum rho(t)` truncated at the sheet's
 six-times rule, the naive standard error, and the 50-block error. Measured
@@ -261,11 +269,43 @@ sweeps for `L = 64`, both at `T = 2.30`, against the sheet's reference 190 and
 670; the flat ends are 1.6 to 2.9 sweeps, a rise of more than a factor of a
 hundred, and the `L = 64` spike is the taller one.
 
-`chi_bootstrap.py` block-bootstraps the two window ramps, 500 replicates each
-at block lengths 2000, 4000 and 8000 sweeps: the bootstrap error of `T_c` is
-0.0097 / 0.0100 / 0.0100 against the sheet's reference 0.0096 / 0.0095 /
-0.0092, stable within a tenth of its mean, with no failed fits. As an extra,
-non-committed cross-check, the course's own diagnostic (the shipped
+`chi_bootstrap.py` block-bootstraps the two window ramps at block lengths
+2000, 4000 and 8000 sweeps. The first version of the script drew 500
+replicates from one seed and reported that draw's verdict as the answer; that
+claim is replaced here, because the verdict was a property of its seed rather
+than of the estimator. One bootstrap error on `T_c` carries a Monte Carlo
+error of its own, about `1/sqrt(2(B - 1))` of itself -- 3.2% at 500 replicates,
+1.1% at 4000 -- against a sheet line a tenth of the mean away. Measured over
+seeds, 17 of the 50 swept from 2026 cross that line at the old 500 replicates,
+and `--seed 999` gives 0.0094 / 0.0104 / 0.0100, a span of 0.0011 or 10.8% of
+the mean, so the old "stable" was the verdict of
+one draw. The default is 4000 replicates now, which puts the Monte Carlo error
+well under the line, and the committed run also sweeps 50 seeds (the default
+`--seed-sweep 50`, seeds 2026 .. 2075). Measured:
+
+```text
+committed draw, seed 2026, 4000 replicates, 0 failed fits
+  bootstrap error of T_c = 0.0099 / 0.0105 / 0.0102 at 2000 / 4000 / 8000 sweeps
+  span 0.0005, span/mean 5.1% <= 10%   ->  stable by the sheet's rule
+pooled over the 50 swept seeds (the 50 draws averaged, so this is not a
+single draw)
+  bootstrap error of T_c = 0.0097 / 0.0103 / 0.0103
+  span 0.0006, span/mean 6.1%          ->  stable by the sheet's rule
+single draws that cross the tenth-of-the-mean line: 0 of 50
+  (the swept span/mean runs 0.025 .. 0.093)
+```
+
+The sheet's Rust reference is 0.0096 / 0.0095 / 0.0092, of the same order. The
+seed sweep is the sensitivity check the old run lacked, and it is reported
+rather than hidden: at the new default 3 of 100 seeds in an independent sweep
+from `--seed 999` still cross the line (against 17 of 50 at the old 500
+replicates), so a single draw is now a few per cent likely to disagree, and the
+pooled estimate the run reports is not flippable by another seed at all. The
+two extra runs are
+`scripts/chi_bootstrap.py --replicates 500 --seed-sweep 50 --out /tmp/chi-old.png`
+and `scripts/chi_bootstrap.py --seed 999 --seed-sweep 100 --out /tmp/chi-999.png`;
+the committed chart and the numbers above come from the plain default command.
+As an extra, non-committed cross-check, the course's own diagnostic (the shipped
 `week3/checker/check` and `week3/checker/tau` run against a legacy-layout
 aggregate rebuilt from the same rows) reproduced `T_c = 2.2720` and every
 `tau_int`, naive, binned and ratio value of `evidence/errors.txt` exactly, for
@@ -320,7 +360,11 @@ ising --update wolff --l 32 --t-from 2.0 --t-to 2.6 --t-step 0.05 \
 One step is one cluster flip, so `discard`, `measure` and `--every` count
 cluster moves, `run.json` says `time_unit = "cluster_flip"`, each row adds
 `cluster_size`, and stdout's third column is the mean cluster size over
-discard plus measure. Measured: 53.37 s and 16.09 s; 1300000 rows each.
+discard plus measure, the Metropolis convention. The sheet's Equation 17 uses
+`<c>` over the measured moves only: at `L = 64`, `T = 2.30` the stdout column
+reads 929.3 where the measured moves average 935.6, and the work-normalized
+comparison below uses the measured-moves value. Measured: 53.37 s and 16.09 s;
+1300000 rows each.
 Below `T_c` the mean cluster covers most of the lattice (3397.2 of 4096 spins
 at `T = 2.0`); above it the cluster shrinks (35.7 spins at `T = 2.6`).
 
@@ -334,21 +378,35 @@ at `T = 2.0`); above it the cluster shrinks (35.7 spins at `T = 2.6`).
 ```
 
 Both read the Metropolis window and the cluster runs. `magnetization_compare.py`
-draws `<|M|>` at `L = 64` for both rules with block-bootstrap errors, tests
-their agreement with `d = |m1 - m2| / sqrt(s1^2 + s2^2)`, and fits the cluster
-susceptibility peaks. Measured at `L = 64`, `T = 2.30`: Metropolis `<|m|> =
-0.4724` and cluster `<|m|> = 0.4350`, so `d = 2.00 <= 3`, but the Metropolis
-error is still block-length sensitive (0.0178 / 0.0198 / 0.0186 at 2000 / 4000
-/ 8000 steps), so the verdict is **agreement provisional** by the sheet's own
-rule. The cluster peaks are `T_peak(32) = 2.3489` and `T_peak(64) = 2.3121`,
+draws `<|M|>` at `L = 64` for both rules with block-bootstrap errors (500
+replicates per block length, the count its committed evidence was produced
+with; Part 3's own bootstrap above moved to 4000 and does not touch these
+numbers), tests their agreement with `d = |m1 - m2| / sqrt(s1^2 + s2^2)`, and
+fits the cluster susceptibility peaks. Measured at `L = 64`, `T = 2.30`:
+Metropolis `<|m|> = 0.4724` and cluster `<|m|> = 0.4350`, so `d = 2.00 <= 3`,
+and the verdict is
+**agreement provisional** by the sheet's own rule. The reason is the robust
+one: the honest Metropolis error at `T = 2.30` is unresolved under that same
+rule's block-length test, because the binning curve of
+`evidence/acf-binning.png` never plateaus -- it is still rising, from 0.000602
+at one-sweep blocks to 0.0242 at 20000-sweep blocks where only 5 blocks are
+left -- so no error bar computed from those rows is stable, whatever `d` comes
+out. The bootstrap spread is supporting detail, and a marginal one: the three
+errors 0.0178 / 0.0198 / 0.0186 at 2000 / 4000 / 8000 steps span 10.5% of
+their mean, just past the tenth-of-the-mean line for this draw, and 76 of 100
+further seeds of the same bootstrap would have read "stable" from that
+statistic alone, so it is not what decides the verdict. The cluster peaks are
+`T_peak(32) = 2.3489` and `T_peak(64) = 2.3121`,
 giving `T_c = 2.2752`, `+0.26%` from 2.26919 (inside Part 2's 2% gate), with a
 bootstrap error of 0.0006 at every block length.
 
 `compare.py` converts the cluster's `tau_moves` into spin-update work with
 `tau_work = tau_moves * <c> / L^2` (Equation 17). At `L = 64`, `T = 2.30` the
-cluster chain has `tau_moves = 4.476` and `<c> = 935.6` spins per move, so
-`tau_work = 1.022` sweeps against Metropolis's 607.7: **594 times less
-spin-update work per independent sample** at that temperature, and 1236 times
+cluster chain has `tau_moves = 4.476` and `<c> = 935.6` spins per move (the
+measured-moves average of Equation 17, against the 929.3 the stdout column of
+the same row prints for discard plus measure), so `tau_work = 1.022` sweeps
+against Metropolis's 607.7: **594 times less spin-update work per independent
+sample** at that temperature, and 1236 times
 at `T = 2.35`, the largest ratio on the window grid. The conversion counts
 flipped and proposed spins, not seconds, so it is an upper bound on the
 elapsed-time speedup.
@@ -439,7 +497,7 @@ cd .. && python3 -m pytest week1/
 ```
 
 The Rust suite is 46 tests (17 contract, 12 physics, 6 reproducibility, 11
-Wolff), the Python suites are 50 tests, and the Week 1 regression is 1 test;
+Wolff), the Python suites are 54 tests, and the Week 1 regression is 1 test;
 all pass. The Rust tests cover the physics (energy, the five `dE` values, the
 acceptance rule), the contract (`run.json`, `series.jsonl`, `spins.jsonl`, the
 stdout table, the grid-inclusion rule), reproducibility (same seed identical
@@ -450,8 +508,9 @@ never read `artifacts/`.
 
 ## Regeneration checklist
 
-From a clean clone, in order: install; contract `diff`; the seven Part 1 runs
-and `cp runs/ramp/spins.jsonl spins.jsonl`; `boltzmann.py`; the viewer setup
+From a clean clone, in order: install; contract `diff`; the six Part 1 runs;
+the `--every 20` ramp and `cp runs/ramp/spins.jsonl spins.jsonl`;
+`boltzmann.py`; the viewer setup
 and three `capture_viewer.mjs` runs; the four Part 2 ramps; `peaks.py`,
 `plot_magnetization.py`, `plot_susceptibility.py`; `errors.py`, `trace.py`,
 `acf_binning.py`, `tau.py`, `chi_bootstrap.py`; the two cluster runs;
