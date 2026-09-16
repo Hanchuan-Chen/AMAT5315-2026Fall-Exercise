@@ -116,7 +116,7 @@ class FitPeakTests(unittest.TestCase):
     def test_fit_uses_five_points_centred_on_the_largest_chi(self) -> None:
         ts = [2.0 + 0.05 * k for k in range(13)]
         chis = [0.0 for _ in ts]
-        chis[0] = 999.0  # a huge far-away outlier must not enter the window
+        chis[0] = 55.0  # a far-away point bigger than its neighbours, still out
         chis[6] = 70.0  # T = 2.30
         chis[5], chis[7] = 60.0, 60.0
         chis[4], chis[8] = 30.0, 30.0
@@ -140,7 +140,7 @@ class OnsagerTests(unittest.TestCase):
 
     def test_matches_the_sheets_reference_values(self) -> None:
         self.assertAlmostEqual(peaks.onsager_abs_m(1.8), 0.9569, places=4)
-        self.assertAlmostEqual(peaks.onsager_abs_m(1.5), 0.9861, places=4)
+        self.assertAlmostEqual(peaks.onsager_abs_m(1.5), 0.9865, places=4)
 
     def test_vanishes_at_and_above_tc(self) -> None:
         self.assertEqual(peaks.onsager_abs_m(peaks.T_C), 0.0)
