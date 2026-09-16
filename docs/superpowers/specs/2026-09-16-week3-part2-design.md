@@ -109,6 +109,10 @@ rounding makes `2.0`, `2.3`, `2.6` identical across the two folders.
 window. The largest `chi` point is found, the five consecutive grid points
 centred on it are taken (two either side), and an exact parabola is fitted
 through those five `(T, chi)` samples by least squares in the monomial basis.
+If the largest `chi` ever sat on the grid's edge the window slides inside
+instead of shrinking, so the fit always sees five points and fails only when
+the grid itself holds fewer than five; on this data the largest `chi` is
+interior for both sizes, so the window is the centred one.
 `T_peak` is the vertex of that parabola, `T_peak = T_v - b / (2 a)` for
 `chi = a x^2 + b x + c` with `x = T - T_v`. The fit is done on the centred
 variable so the small `0.05` spacing does not make the normal equations
