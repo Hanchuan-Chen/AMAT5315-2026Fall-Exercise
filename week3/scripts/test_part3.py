@@ -232,6 +232,16 @@ def exact_window(
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_the_default_replicate_count_is_far_past_the_seed_noise(self) -> None:
+        # The sheet's stability line sits a tenth of the mean away, and one
+        # bootstrap sigma carries a Monte Carlo error near 1/sqrt(2 (B - 1))
+        # of itself: 3.2% at 500 replicates. The default has to be well past
+        # 500 for a single draw's verdict not to be a property of its seed.
+        self.assertGreaterEqual(chi_bootstrap.DEFAULT_REPLICATES, 4000)
+        self.assertLess(
+            1.0 / math.sqrt(2.0 * (chi_bootstrap.DEFAULT_REPLICATES - 1)), 0.02
+        )
+
     def test_resampling_constant_blocks_leaves_chi_alone(self) -> None:
         rng = np.random.default_rng(7)
         abs_blocks = np.full(10, 0.4)
@@ -282,6 +292,58 @@ class BootstrapTests(unittest.TestCase):
                 chi_bootstrap.FitOutcome(t_peak=2.31, t_min=2.20, t_max=2.40, curvature=+1.0)
             )
         )
+
+
+class SeedSweepTests(unittest.TestCase):
+    def test_a_sweep_reproduces_each_seed_s_own_bootstrap(self) -> None:
+        n = 20000
+        window = {
+            32: exact_window(32, 2.35, -40.0, 30.0, n),
+            64: exact_window(64, 2.31, -50.0, 60.0, n),
+        }
+        sweep = chi_bootstrap.sweep_seeds(window, replicates=20, seeds=[99, 100])
+        self.assertEqual(sweep.seeds, [99, 100])
+        self.assertEqual(sweep.total, 2)
+        self.assertEqual(sweep.replicates, 20)
+        for index, seed in enumerate(sweep.seeds):
+            for length in chi_bootstrap.BLOCK_LENGTHS:
+                expected = chi_bootstrap.bootstrap_tc(window, length, 20, seed).error
+                self.assertAlmostEqual(sweep.errors[length][index], expected, places=15)
+
+    def test_an_exact_parabola_window_gives_every_seed_a_zero_span(self) -> None:
+        n = 20000
+        window = {
+            32: exact_window(32, 2.35, -40.0, 30.0, n),
+            64: exact_window(64, 2.31, -50.0, 60.0, n),
+        }
+        sweep = chi_bootstrap.sweep_seeds(window, replicates=20, seeds=[99, 100])
+        np.testing.assert_allclose(sweep.ratios, 0.0, atol=1e-12)
+        self.assertEqual(sweep.crossings, 0)
+        values, span, ratio = sweep.pooled_summary()
+        self.assertEqual(values.size, len(chi_bootstrap.BLOCK_LENGTHS))
+        self.assertAlmostEqual(span, 0.0, places=12)
+        self.assertAlmostEqual(ratio, 0.0, places=12)
+
+    def test_a_sweep_counts_the_draws_that_cross_the_line(self) -> None:
+        # The first triple spans 0.0003 of its mean 0.0099, inside the line;
+        # the second spans 0.0010 of its mean 0.0099, outside it.
+        sweep = chi_bootstrap.SeedSweep(
+            seeds=[2026, 999],
+            replicates=500,
+            errors={
+                2000: np.array([0.0097, 0.0094]),
+                4000: np.array([0.0100, 0.0104]),
+                8000: np.array([0.0100, 0.0100]),
+            },
+        )
+        self.assertEqual(sweep.total, 2)
+        self.assertEqual(sweep.crossings, 1)
+        self.assertAlmostEqual(float(sweep.ratios[0]), 0.0003 / 0.0099, places=6)
+        self.assertAlmostEqual(float(sweep.ratios[1]), 0.0010 / 0.009933, places=4)
+        pooled = sweep.pooled
+        self.assertAlmostEqual(pooled[2000], 0.00955, places=9)
+        self.assertAlmostEqual(pooled[4000], 0.01020, places=9)
+        self.assertAlmostEqual(pooled[8000], 0.01000, places=9)
 
 
 if __name__ == "__main__":
