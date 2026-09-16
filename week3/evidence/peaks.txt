@@ -1,0 +1,20 @@
+week3 part 2 - susceptibility peaks and the extrapolated critical temperature
+
+chi(T) = L^2 (<m^2> - <|m|>^2) / T; window rows are used for 2.00 <= T <= 2.60, coarse rows elsewhere.
+
+L = 32 (27 temperatures on the merged grid)
+  cold mean |M| at T = 1.500 : 0.9867
+  largest chi on the grid at T = 2.350 : chi = 21.4220
+  fitted peak T_peak(32) over T = 2.250 .. 2.450 : 2.3495 (chi = 21.1983)
+
+L = 64 (27 temperatures on the merged grid)
+  cold mean |M| at T = 1.500 : 0.9866
+  largest chi on the grid at T = 2.300 : chi = 64.6092
+  fitted peak T_peak(64) over T = 2.200 .. 2.400 : 2.3108 (chi = 57.0676)
+
+extrapolated critical temperature
+  T_c = 2 T_peak(64) - T_peak(32) = 2.2720
+  Onsager exact T_c                = 2.2692
+  deviation                        = +0.12%
+
+  gate: cold mean |M| >= 0.9 for each size, |T_c - 2.26919| / 2.26919 < 0.02
