@@ -148,10 +148,27 @@ error `peaks.fit_peak` already raises) or when its vertex falls outside the
 five fitted temperatures. The reported bootstrap error is the sample standard
 deviation (`ddof=1`) of the successful replicates' `T_c`.
 
-Block lengths 2000, 4000 and 8000 sweeps, 500 replicates each, are the sheet's
-values. Their errors are called **stable** when the three values agree within a
-tenth of their mean, `max - min <= mean / 10`; otherwise the deliverable
-reports "sampling error unresolved".
+Block lengths 2000, 4000 and 8000 sweeps are the sheet's values. Their errors
+are called **stable** when the three values agree within a tenth of their mean,
+`max - min <= mean / 10`; otherwise the deliverable reports "sampling error
+unresolved".
+
+One bootstrap `sigma_Tc` carries a Monte Carlo error of its own, about
+`1 / sqrt(2 (B - 1))` of itself: 3.2% of it at the 500 replicates the first
+version of the script drew, 1.1% at 4000, against a line a tenth of the mean
+away. That first version drew 500 replicates from one seed and reported that
+draw's verdict as the answer, which made the verdict a property of the seed:
+17 of the 50 seeds swept from 2026 cross the line at 500 replicates, and
+`--seed 999` gives `0.0094 / 0.0104 / 0.0100`, a span of 10.8% of the mean, so
+the claim was replaced. The default is now `DEFAULT_REPLICATES = 4000`, and
+the default run also sweeps 50 seeds (`--seed-sweep`, seeds 2026 .. 2075) and
+reports three things: the committed draw's own three errors and verdict, the
+estimate pooled over the swept seeds (the seed scatter of 50 draws averaged
+down, which is why the pooled verdict is not flippable by another seed), and
+the number of single draws that cross the tenth-of-the-mean line. Part 4's
+sampler comparison keeps its own 500 replicates (`chi_bootstrap.REPLICATES`,
+which `magnetization_compare.py` reads), because its committed evidence was
+produced at that count.
 
 This error covers sampling only. It excludes finite-size corrections and the
 bias of fitting a five-point parabola to an asymmetric peak, which more sweeps
@@ -172,8 +189,10 @@ do not shrink.
 - `tau.png`: `tau_int` against temperature for both sizes on the merged grid
   with a logarithmic vertical axis and the dashed line at `T_c`.
 - `chi-bootstrap.png`: `chi(T)` for both sizes, their five-point fits, the
-  shaded envelope of the 500 fitted parabolas at each block length, and the
-  marked `T_c = 2.26919`.
+  shaded envelope of the 4000 fitted parabolas at each block length, the
+  marked `T_c = 2.26919`, and a caption carrying the pooled three errors, their
+  span and span/mean, the resulting verdict, and the single-draw crossing rate
+  of the seed sweep.
 
 Every chart is matplotlib `Agg`, reads only `week3/artifacts/`, and is written
 by a script that also prints the numbers it drew, so the committed PNG and the
@@ -275,7 +294,8 @@ present, so it is recorded here and repeated in the report.
   `week3/artifacts/`.
 - **Runtime.** The bootstrap is minutes on the sheet's own protocol; here the
   block means are precomputed once per temperature and block length and each
-  replicate only resamples them, so the run is dominated by reading 2.6
+  replicate only resamples them, so the run is dominated by the 4000-replicate
+  draw and the 50 seeds of the sweep, about a minute, on top of reading 2.6
   million JSON rows. It is still launched in the background with a log, as the
   sheet instructs.
 - **Committed size.** The four PNGs and the text table are all far below 5 MB;
@@ -307,3 +327,21 @@ error of `0.0006 * sqrt(1215) = 0.021` while the naive bar claims `0.0006`.
 
 The wrap-up phase quotes the copy at
 `/tmp/amat5315-w3/part3-extension.md`.
+
+## Measured bootstrap numbers
+
+From the committed default run (seed 2026, 4000 replicates at each block
+length, 50-seed sweep), the same run that writes `week3/evidence/chi-bootstrap.png`:
+
+```text
+committed draw    sigma_Tc = 0.0099 / 0.0105 / 0.0102  span 0.0005, span/mean 5.1%
+pooled, 50 seeds  sigma_Tc = 0.0097 / 0.0103 / 0.0103  span 0.0006, span/mean 6.1%
+single draws crossing the tenth-of-the-mean line: 0 of 50 (span/mean 0.025 .. 0.093)
+independent sweep of 100 seeds from --seed 999: 3 cross (span/mean 0.022 .. 0.111)
+```
+
+Both the committed draw and the pooled estimate read stable, no replicate
+fails its fit, and the central Part 2 `T_c` is unchanged at 2.2720. The seed is
+no longer what decides the verdict: the pooled estimate averages the seed
+scatter down and cannot cross the line with another seed, and the residual
+single-draw rate is the few per cent above, reported rather than hidden.

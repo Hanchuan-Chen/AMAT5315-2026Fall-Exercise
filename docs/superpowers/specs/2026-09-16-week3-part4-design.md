@@ -207,9 +207,11 @@ d = | <|m|>_1 - <|m|>_2 | / sqrt(sigma_1^2 + sigma_2^2)       (Equation 18)
 
 The errors are block-bootstrap standard deviations of the mean of `|m|` at
 block lengths 2000, 4000 and 8000 moves (Metropolis: sweeps), the same three
-lengths and replicate count Part 3's `chi_bootstrap.py` uses, so the stability
-verdict is the same test: the three values must agree within a tenth of their
-mean. The sheet's rule is then:
+lengths Part 3's `chi_bootstrap.py` uses and its shared 500 replicates
+(`chi_bootstrap.REPLICATES`, the count this phase's committed evidence was
+produced with; Part 3's own default is a separate, larger constant), so the
+stability verdict is the same test: the three values must agree within a tenth
+of their mean. The sheet's rule is then:
 
 - both errors stable and `d <= 3` -> report agreement;
 - either error still depends on the block length -> "agreement provisional";
