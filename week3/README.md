@@ -62,7 +62,7 @@ uv venv .venv && uv pip install numpy matplotlib
 `cargo install --path .` leaves `ising` on `PATH` (`~/.cargo/bin/ising`);
 `uv venv` creates the git-ignored `week3/.venv`. Every Python command below is
 run as `.venv/bin/python ...`. Verified with numpy 2.5.3 and matplotlib
-3.11.2.
+3.11.2; the charts are byte-identical for that pair of versions.
 
 ## The contract
 
@@ -168,6 +168,12 @@ node scripts/capture_viewer.mjs 2.3 evidence/viewer-T2.3.png
 node scripts/capture_viewer.mjs 3.0 evidence/viewer-T3.0.png
 ```
 
+Each proof is the viewer's own stamped caption over the lattice and the
+`m`-against-`sweep` trace, so it records the temperature, the sweep, `m`, the
+frame index, `L = 64`, the `spins.jsonl` size, the frame count and the capture
+time. A later capture of the same recording is the same picture with a new
+timestamp; the committed stamps were taken on 2026-09-16.
+
 ## Part 2: the magnetization and the critical temperature
 
 ### The four ramps
@@ -188,9 +194,9 @@ ising --update metropolis --l 64 --t-from 2.0 --t-to 2.6 --t-step 0.05 \
 ```
 
 Measured on the machine this README was verified on: 2.80 s, 10.54 s, 22.25 s
-and 84.59 s; 105000 rows per coarse folder (21 temperatures x 5000 sweeps) and
-1300000 rows per window folder (13 temperatures x 100000 sweeps), about 160 MB
-in total.
+and 84.59 s when the four ran one process per ramp; 105000 rows per coarse
+folder (21 temperatures x 5000 sweeps) and 1300000 rows per window folder (13
+temperatures x 100000 sweeps), about 160 MB in total.
 
 ### Analysis
 
@@ -294,7 +300,11 @@ hours = 121542000 / 15700.5 / 3600 = 2.15 hours   about 2 h 9 min
 
 That converts the run length, assuming `tau_int` stays fixed, so 2.15 hours is
 a lower bound: the honest error at `T = 2.3` is unresolved, and the longer run
-buys about 82 effective samples for the whole length, not 100000.
+buys about 82 effective samples for the whole length, not 100000. The rate is
+a wall-clock measurement of one machine under whatever load it carried (a
+repeat inside the fresh clone gave 6.12, 6.13 and 6.16 s, about 16600
+sweeps/s), so the hours figure is an estimate for this laptop, not a property
+of the model.
 
 ## Part 4: beat critical slowing down
 
@@ -428,10 +438,12 @@ cargo test --release
 cd .. && python3 -m pytest week1/
 ```
 
-The Rust tests cover the physics (energy, the five `dE` values, the acceptance
-rule), the contract (`run.json`, `series.jsonl`, `spins.jsonl`, the stdout
-table, the grid-inclusion rule), reproducibility (same seed identical bytes,
-different seed differs) and the Wolff update (the exact Boltzmann
+The Rust suite is 46 tests (17 contract, 12 physics, 6 reproducibility, 11
+Wolff), the Python suites are 50 tests, and the Week 1 regression is 1 test;
+all pass. The Rust tests cover the physics (energy, the five `dE` values, the
+acceptance rule), the contract (`run.json`, `series.jsonl`, `spins.jsonl`, the
+stdout table, the grid-inclusion rule), reproducibility (same seed identical
+bytes, different seed differs) and the Wolff update (the exact Boltzmann
 distribution on a 3x3 torus, the hand-checkable clusters, Equation 16). The
 Python suites are self-contained: they build synthetic run folders, so they
 never read `artifacts/`.
