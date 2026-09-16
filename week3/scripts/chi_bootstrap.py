@@ -12,10 +12,19 @@ recomputes everything Part 2 computed:
     T_c    = 2 T_peak(64) - T_peak(32)                           (Equation 11)
 
 Each size and temperature is resampled separately, at block lengths 2000, 4000
-and 8000 sweeps with 500 replicates each, both as the sheet specifies. The
+and 8000 sweeps, the sheet's block lengths, with 4000 replicates each. The
 spread of the replicated `T_c` values is its sampling error; the sheet calls
 that error stable when the three block lengths agree within a tenth of their
 mean, and reports it as unresolved otherwise.
+
+A bootstrap `sigma_Tc` carries a Monte Carlo error of its own, about
+`1 / sqrt(2 (B - 1))` of itself: 3.2% at 500 replicates and 1.1% at 4000,
+against a sheet line a tenth of the mean away. The first version of this
+script drew 500 replicates from one seed and reported that draw's verdict as
+the answer, which made the verdict a property of the seed 3 times in 10; the
+replicate count is now 4000, and the seed sweep below runs at that count, so
+the verdict of the committed draw and of the estimate pooled over the sweep
+are both reported, with the single-draw crossing rate between them.
 
 Two kinds of replicate are failed fits and are counted, not silently dropped:
 a parabola that does not bend downward (a positive curvature, which
@@ -28,7 +37,8 @@ peak that is not one, both of which more sweeps do not shrink.
 
 Blocks are handled through their means: a resampled series is the mean of the
 drawn block means, so a replicate costs `k` additions rather than a 100000-row
-copy, and all 39000 of them run in seconds once the rows are read.
+copy, and the whole run -- the committed draw plus the default 50-seed sweep,
+3 * 4000 replicates each -- costs about a minute once the rows are read.
 
 Run:  .venv/bin/python scripts/chi_bootstrap.py
 Writes:  week3/evidence/chi-bootstrap.png
@@ -53,9 +63,26 @@ import peaks  # noqa: E402
 HERE = Path(__file__).resolve().parent
 WEEK = HERE.parent
 
-#: The sheet's block lengths and replicate count.
+#: The sheet's block lengths.
 BLOCK_LENGTHS = [2000, 4000, 8000]
+
+#: Part 3's replicate count, and the count the committed chart is drawn at.
+#: A bootstrap `sigma_Tc` carries a Monte Carlo error of about
+#: `1 / sqrt(2 (B - 1))` of itself -- 3.2% of it at the 500 replicates the
+#: first version of this script used, 1.1% at 4000 -- and the sheet's
+#: stability line sits a tenth of the mean away, so 4000 puts the Monte Carlo
+#: error well under the line; the residual single-draw sensitivity is then
+#: measured by the sweep below rather than assumed away. See `SeedSweep`.
+DEFAULT_REPLICATES = 4000
+
+#: Part 4's sampler comparison reads this name for its own replicate count and
+#: its committed evidence was produced at 500, so the value stays 500 here.
 REPLICATES = 500
+
+#: Seeds the single-draw sensitivity check sweeps, starting at the default
+#: seed. Every swept seed is a complete bootstrap draw at the same replicate
+#: count, so the sweep measures the scatter of the estimator itself.
+SEED_SWEEP = 50
 
 #: Sizes and the number of grid points the peak fit sees.
 SIZES = (32, 64)
@@ -206,7 +233,7 @@ def central_fits(
 def bootstrap_tc(
     window: dict[int, dict[float, np.ndarray]],
     block_length: int,
-    replicates: int = REPLICATES,
+    replicates: int = DEFAULT_REPLICATES,
     seed: int = 2026,
 ) -> BootstrapResult:
     """Block-bootstrap `T_c` of the window runs at one block length."""
@@ -269,12 +296,97 @@ def stability_verdict(errors_by_length: dict[int, float]) -> tuple[bool, str]:
     )
 
 
+@dataclass(frozen=True)
+class SeedSweep:
+    """One complete bootstrap draw per seed, and what the sweep says.
+
+    Every seed bootstraps the same rows, so all of them estimate the same
+    sampling error and the scatter between them is the Monte Carlo noise of
+    the estimator itself. `pooled` averages those draws, which cuts the
+    residual Monte Carlo error from 1.1% of `sigma` to about 0.16% of it at 50
+    seeds, and is why the pooled verdict is a statement about the estimator
+    rather than about the seed; `crossings` counts the single draws that would
+    have reported the other verdict on their own.
+    """
+
+    seeds: list[int]
+    replicates: int
+    errors: dict[int, np.ndarray]
+
+    @property
+    def total(self) -> int:
+        return len(self.seeds)
+
+    @property
+    def stabilities(self) -> np.ndarray:
+        """Each seed's own verdict, in seed order."""
+        return np.array(
+            [
+                stability_verdict({b: self.errors[b][i] for b in BLOCK_LENGTHS})[0]
+                for i in range(self.total)
+            ],
+            dtype=bool,
+        )
+
+    @property
+    def crossings(self) -> int:
+        """How many single draws cross the sheet's tenth-of-the-mean line."""
+        return int((~self.stabilities).sum())
+
+    @property
+    def ratios(self) -> np.ndarray:
+        """Each seed's `span / mean` of its three errors, in seed order."""
+        values = np.stack([self.errors[b] for b in BLOCK_LENGTHS], axis=1)
+        mean = values.mean(axis=1)
+        span = values.max(axis=1) - values.min(axis=1)
+        if not np.isfinite(values).all() or not np.isfinite(mean).all():
+            return np.full(self.total, np.nan)
+        return np.where(mean > 0.0, span / np.where(mean > 0.0, mean, 1.0), 0.0)
+
+    @property
+    def pooled(self) -> dict[int, float]:
+        """The mean of the swept seeds' errors at each block length."""
+        return {b: float(self.errors[b].mean()) for b in BLOCK_LENGTHS}
+
+    def pooled_summary(self) -> tuple[np.ndarray, float, float]:
+        """`(errors, span, span / mean)` of the pooled estimate."""
+        values = np.array([self.pooled[b] for b in BLOCK_LENGTHS], dtype=float)
+        mean = float(values.mean())
+        span = float(values.max() - values.min())
+        return values, span, (span / mean if mean > 0.0 else 0.0)
+
+
+def sweep_seeds(
+    window: dict[int, dict[float, np.ndarray]],
+    replicates: int,
+    seeds: list[int],
+) -> SeedSweep:
+    """Bootstrap the whole stability check once per seed.
+
+    The seeds are swept rather than averaged over inside one bootstrap so that
+    each one stays a complete, reproducible draw: the sweep answers "would a
+    reader who chose another seed get the committed verdict?", which is the
+    question the replicate count alone cannot settle.
+    """
+    errors = {b: np.empty(len(seeds), dtype=float) for b in BLOCK_LENGTHS}
+    for index, seed in enumerate(seeds):
+        for length in BLOCK_LENGTHS:
+            errors[length][index] = bootstrap_tc(window, length, replicates, seed).error
+    return SeedSweep(seeds=list(seeds), replicates=replicates, errors=errors)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--artifacts", type=Path, default=WEEK / "artifacts")
     parser.add_argument("--out", type=Path, default=WEEK / "evidence" / "chi-bootstrap.png")
-    parser.add_argument("--replicates", type=int, default=REPLICATES)
+    parser.add_argument("--replicates", type=int, default=DEFAULT_REPLICATES)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument(
+        "--seed-sweep",
+        type=int,
+        default=SEED_SWEEP,
+        help="seeds to sweep from --seed for the single-draw sensitivity check; 0 disables it",
+    )
     return parser.parse_args()
 
 
@@ -304,6 +416,18 @@ def main() -> None:
     ]
     errors_by_length = {r.block_length: r.error for r in results}
     stable, verdict = stability_verdict(errors_by_length)
+    this_span = float(
+        max(errors_by_length.values()) - min(errors_by_length.values())
+    )
+    this_mean = float(np.mean(list(errors_by_length.values())))
+
+    sweep = None
+    if args.seed_sweep > 0:
+        sweep = sweep_seeds(
+            window,
+            args.replicates,
+            [args.seed + k for k in range(args.seed_sweep)],
+        )
 
     fits, central_tc = central_fits(window)
     if not np.isfinite(central_tc):
@@ -369,7 +493,8 @@ def main() -> None:
                 alpha=shade[result.block_length],
                 linewidth=0.0,
                 label=(
-                    f"$L$ = {lattice}: 500 replicates, {result.block_length}-sweep blocks"
+                    f"$L$ = {lattice}: {result.replicates} replicates,"
+                    f" {result.block_length}-sweep blocks"
                     if lattice == 64
                     else None
                 ),
@@ -418,8 +543,37 @@ def main() -> None:
     figure.suptitle(
         "Block bootstrap of the susceptibility peaks over the window runs,"
         f" {args.replicates} replicates at 2000 / 4000 / 8000 sweeps"
+        + (f", {sweep.total}-seed sweep" if sweep is not None else ""),
+        y=0.985,
+        fontsize=11,
     )
-    figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.94))
+    caption = []
+    if sweep is not None:
+        values, span, ratio = sweep.pooled_summary()
+        pooled_stable, _ = stability_verdict(sweep.pooled)
+        caption.append(
+            f"pooled over {sweep.total} seeds: $\\sigma_{{T_c}}$ = "
+            + " / ".join(f"{v:.4f}" for v in values)
+            + f", span {span:.4f} = {ratio:.1%} of their mean {values.mean():.4f}"
+            + f" -> {'stable' if pooled_stable else 'sampling error unresolved'}"
+            " by the sheet's tenth-of-the-mean line"
+        )
+        caption.append(
+            f"this draw (seed {args.seed}): span {this_span:.4f} = "
+            f"{this_span / this_mean:.1%} of the mean; {sweep.crossings} of"
+            f" {sweep.total} single draws cross the line"
+            f" (span/mean {sweep.ratios.min():.3f} .. {sweep.ratios.max():.3f})"
+        )
+    if caption:
+        figure.text(
+            0.5,
+            0.945,
+            "\n".join(caption),
+            ha="center",
+            va="top",
+            fontsize=8.5,
+        )
+    figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.86 if caption else 0.94))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out)
 
@@ -433,7 +587,22 @@ def main() -> None:
               f" {result.successes}/{result.replicates} successful replicates,"
               f" {result.failures} failed fits, T_c = {result.tc_values.mean():.4f}"
               f" +- {result.error:.4f} (sample sd, ddof=1)")
-    print(f"  {'STABLE' if stable else 'UNSTABLE'}: {verdict}")
+    print(f"  {'STABLE' if stable else 'UNSTABLE'} (seed {args.seed}): {verdict}")
+    print(f"    span {this_span:.4f} = {this_span / this_mean:.1%} of the mean"
+          f" {this_mean:.4f}; replicates carry a Monte Carlo error near"
+          f" {1.0 / np.sqrt(2.0 * (args.replicates - 1)):.1%} of sigma")
+    if sweep is not None:
+        values, span, ratio = sweep.pooled_summary()
+        pooled_stable, pooled_verdict = stability_verdict(sweep.pooled)
+        print(f"  seed sweep, {sweep.total} seeds from {args.seed} at"
+              f" {args.replicates} replicates each:")
+        print(f"    single draws crossing the tenth-of-the-mean line:"
+              f" {sweep.crossings}/{sweep.total}"
+              f" (span/mean {sweep.ratios.min():.4f} .. {sweep.ratios.max():.4f})")
+        print(f"    pooled errors: {' / '.join(f'{v:.4f}' for v in values)},"
+              f" span {span:.4f}, span/mean {ratio:.4f}")
+        print(f"  {'STABLE' if pooled_stable else 'UNSTABLE'} (pooled over"
+              f" {sweep.total} seeds): {pooled_verdict}")
     print("  comparison with the sheet's Rust reference 0.0096 / 0.0095 / 0.0092")
 
 
