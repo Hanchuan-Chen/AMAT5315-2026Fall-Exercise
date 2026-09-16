@@ -6,7 +6,7 @@
 
 **Architecture:** One binary, five small modules. `lattice` owns spins and the energy of a flip; `metropolis` owns the accept rule and one sweep; `ramp` owns the temperature grid, the single random stream, the global sweep counter, and the warm-start loop; `artifacts` owns the exact file formats; `cli`/`main` own argument parsing, validation, the stdout table, and exit codes. Integration tests drive both the library and the installed binary.
 
-**Tech Stack:** Rust 1.98.1, Cargo, Clap 4 (derive), rand 0.9 with rand_chacha 0.9 (`ChaCha8Rng`), serde/serde_json 1, assert_cmd 2, predicates 3, tempfile 3, Python 3.12 in `week3/.venv` via `uv` with numpy and matplotlib for `scripts/boltzmann.py`, headless Google Chrome driven over the DevTools protocol for the viewer proofs.
+**Tech Stack:** Rust 1.98.1, Cargo, Clap 4 (derive), rand 0.9 with rand_chacha 0.9 (`ChaCha8Rng`), serde/serde_json 1, tempfile 3 plus Cargo's `CARGO_BIN_EXE_ising` for the binary tests, Python 3.12 in `week3/.venv` via `uv` with numpy and matplotlib for `scripts/boltzmann.py`, and puppeteer-core driving headless Google Chrome for the viewer proofs (`window.composeProofPNG()`).
 
 **Spec:** docs/superpowers/specs/2026-09-16-week3-ising-sampler-design.md
 
@@ -67,7 +67,7 @@
 
 - [ ] Add the manifest and a compiling skeleton: every public function exists with the signature the tests call and a `todo!()` body.
 - [ ] Write the physics tests: energy against an independent brute-force bond loop on `L = 2, 3, 8` and random configurations; the five `dE` values realized by explicit 3x3 patterns; `dE` equal to `energy_after - energy_before`; acceptance probabilities `1, 1, 1, exp(-4/T), exp(-8/T)`; a boundary case per value; a statistical check that many `dE = +4` proposals at `T = 2.3` accept at `exp(-4/2.3)` within tolerance; a flip twice restores spins and energy.
-- [ ] Write the contract tests with `assert_cmd`: header exactly `T\tmean|M|\tacceptance` then one tab-separated row per temperature; `run.json` fields and values; `series.jsonl` keys, ramp order, `sweep` restart at 1, `M`/`E` integers when scaled by `1e6`, `M` equal to the signed mean of `spins` sums when both are recorded; `spins.jsonl` keys, `L^2` entries of `+1/-1`, only created when `every > 0`, and the exact cumulative global `sweep` list for a small ramp; grid inclusion for `1.5..3.5` step `0.05` (41 values ending at 3.5) and `1.5..3.55` step `0.1` (21 values ending at 3.5), plus a unit test of `temperature_grid` for the `t_to` rule.
+- [ ] Write the contract tests, driving the built binary through `env!("CARGO_BIN_EXE_ising")`: header exactly `T\tmean|M|\tacceptance` then one tab-separated row per temperature; `run.json` fields and values; `series.jsonl` keys, ramp order, `sweep` restart at 1, `M`/`E` six-decimal fields, `M` equal to the frame's mean spin when both are recorded; `spins.jsonl` keys, `L^2` entries of `+1/-1`, only created when `every > 0`, and the exact cumulative global `sweep` list for a small ramp; grid inclusion for `1.5..3.5` step `0.05` (41 values ending at 3.5) and `1.5..3.55` step `0.1` (21 values ending at 3.5), plus a unit test of `temperature_grid` for the `t_to` rule.
 - [ ] Write the reproducibility tests: two runs with seed 2026 give identical `series.jsonl` bytes; seed 2027 differs; different `--l` gives different rows.
 - [ ] Run `cargo test` and record the expected failures; commit `test: specify the ising sampler contract`.
 
