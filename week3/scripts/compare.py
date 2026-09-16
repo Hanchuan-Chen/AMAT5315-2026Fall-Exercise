@@ -39,6 +39,14 @@ import peaks  # noqa: E402
 HERE = Path(__file__).resolve().parent
 WEEK = HERE.parent
 
+
+def display_path(path: Path) -> str:
+    """Report a path relative to week3/ when it lives there, so it is portable."""
+    try:
+        return str(path.resolve().relative_to(WEEK))
+    except ValueError:
+        return str(path)
+
 #: The size the sheet's work comparison uses.
 LATTICE = 64
 #: The temperature the work ratio is quoted at.
@@ -224,7 +232,7 @@ def main() -> None:
         " bound on the elapsed-time speedup at the same temperature."
     )
     lines.append("")
-    lines.append(f"chart {args.out}")
+    lines.append(f"chart {display_path(args.out)}")
     report = "\n".join(lines) + "\n"
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(report)

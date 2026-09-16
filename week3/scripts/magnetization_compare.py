@@ -57,6 +57,14 @@ import peaks  # noqa: E402
 HERE = Path(__file__).resolve().parent
 WEEK = HERE.parent
 
+
+def display_path(path: Path) -> str:
+    """Report a path relative to week3/ when it lives there, so it is portable."""
+    try:
+        return str(path.resolve().relative_to(WEEK))
+    except ValueError:
+        return str(path)
+
 #: The update rules' names, which are also their artifact folder prefixes.
 SAMPLERS = ("metropolis", "wolff")
 CLUSTER_RUNS = {32: "wolff-l32", 64: "wolff-l64"}
@@ -519,7 +527,7 @@ def main() -> None:
     )
     lines.append("")
     lines.append("chart")
-    lines.append(f"  {args.out}")
+    lines.append(f"  {display_path(args.out)}")
     report = "\n".join(lines) + "\n"
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(report)

@@ -44,4 +44,4 @@ L = 64, critical window 2.00 .. 2.60 (13 temperatures). Metropolis rows come fro
   The cluster error is a sampling error only: the finite-size shift of Equation 11 and the five-point parabola's own bias are outside it, so it is a lower bound on the uncertainty of T_c.
 
 chart
-  /Users/eureka/Documents/Codex/2026-09-02/ban/AMAT5315-2026Fall-Exercise/week3/evidence/magnetization-compare.png
+  evidence/magnetization-compare.png

@@ -27,4 +27,4 @@ why more independent samples do not remove the remaining bias
 
   The conversion is spin-update work, not wall clock: growing a cluster costs more per spin than proposing a single flip, and the recorded move does the bookkeeping for the whole cluster. The ratio is an upper bound on the elapsed-time speedup at the same temperature.
 
-chart /Users/eureka/Documents/Codex/2026-09-02/ban/AMAT5315-2026Fall-Exercise/week3/evidence/tau-compare.png
+chart evidence/tau-compare.png
