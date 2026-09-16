@@ -1,0 +1,165 @@
+week3 part 3 - how much to trust part 2
+
+Nothing is added to the contract. Every number below comes from the four
+Metropolis ramps that Part 2 wrote into the git-ignored week3/artifacts/, read
+by the scripts in week3/scripts/ and nothing else.
+
+coarse-l32, coarse-l64   1.5 .. 3.5 step 0.1, discard 2000, measure 5000
+window-l32, window-l64   2.0 .. 2.6 step 0.05, discard 2000, measure 100000
+
+commands, in order, with the file each writes
+
+  .venv/bin/python scripts/errors.py          -> evidence/errors.txt      1.8 s
+  .venv/bin/python scripts/trace.py           -> evidence/trace.png       1.2 s
+  .venv/bin/python scripts/acf_binning.py     -> evidence/acf-binning.png 1.2 s
+  .venv/bin/python scripts/tau.py             -> evidence/tau.png         2.0 s
+  .venv/bin/python scripts/chi_bootstrap.py   -> evidence/chi-bootstrap.png 2.1 s
+
+The analysis tests are self-contained and never read week3/artifacts/:
+
+  .venv/bin/python -m unittest scripts.test_part3      21 tests, OK
+
+(1) errors.txt: error bars and the integrated autocorrelation time of |M|
+
+One row per size and temperature on the same 27-temperature merged grid Part 2
+used (window rows inside [2.0, 2.6], coarse rows outside). tau_int is
+Equation 13, summed until the lag exceeds six times the running total and
+stopped early when rho(t) goes negative, never past lag min(n // 4, 5000) - 1;
+rho is evaluated by FFT. The sheet's own command selects the three L = 64 rows:
+
+  awk 'NR == 1 || ($1 == 64 && ($2 == 1.5 || $2 == 2.3 || $2 == 3.5))' evidence/errors.txt
+
+  T      mean |M|   naive      50-block    ratio   tau_int   n        reference
+  1.50   0.9866    0.0000431  0.0000869   2.02    1.65      5000     2.16 / 1.61
+  2.30   0.4724    0.0006023  0.0184699   30.66   607.71    100000   31.16 / 669.22
+  3.50   0.0287    0.0003087  0.0006154   1.99    2.26      5000     2.05 / 2.33
+
+  pass: ratio >= 10 and tau_int of order hundreds at T = 2.3. Measured 30.66
+  and 607.71 sweeps. At 1.5 and 3.5 the ratio is about 2 (2.02, 1.99) and
+  tau_int a few sweeps (1.65, 2.26).
+
+  2000-sweep blocks at T = 2.3 are only about three autocorrelation times, and
+  sqrt(2 tau_int) = 34.9, above the measured 30.66: the 50-block error there is
+  provisional, which check (3) settles.
+
+(2) trace.png: the raw series at two temperatures
+
+  T = 2.3 from window-l64 (the window grid is 2.0 .. 2.6; 3.0 is outside it)
+  T = 3.0 from coarse-l64
+
+  T = 2.3: first 2000 sweeps mean |m| = 0.5850, all 100000 sweeps 0.4724,
+           tau_int 607.71 sweeps, n_eff = 100000 / (2 tau_int) = 82.3
+  T = 3.0: first 2000 sweeps mean |m| = 0.0434, all 5000 sweeps 0.0437,
+           tau_int 5.78 sweeps, n_eff = 432.6
+
+  The hot trace jitters around its mean; the critical trace drifts in
+  excursions of hundreds of sweeps, from 0.8 down to below 0.1 inside the
+  drawn 2000. Its long-run mean is 0.4724, about 0.05 above the answer key's
+  0.4225, which is 2.4 of its own honest error bars (0.0185); one stream of
+  about 82 effective samples does not pin that mean more tightly.
+
+(3) acf-binning.png: autocorrelation and binning at L = 64, T = 2.3
+
+  rho(t) first goes negative at lag 2441; tau_int = 607.71 sweeps
+
+  block length   blocks left   error bar on <|m|>
+        1            100000    0.000602   <- the naive error of errors.txt
+        2             50000    0.000851
+        4             25000    0.001203
+        8             12500    0.001698
+       16              6250    0.002395
+       32              3125    0.003369
+       64              1562    0.004720
+      128               781    0.006566
+      256               390    0.009011
+      512               195    0.012082
+     1024                97    0.015382
+     2048                48    0.018448
+     4096                24    0.022015
+     5000                20    0.018026
+    10000                10    0.020786
+    20000                 5    0.024239
+
+  The block-length-one point equals the naive error of errors.txt to round-off
+  (the script asserts it). There is no plateau: the estimate is still moving by
+  a factor 1.34 between 0.0180 and 0.0242 over the longest block lengths, with
+  only 5 to 24 blocks left, against the answer key's still-rising curve from
+  0.0006 to 0.021 at 5000-sweep blocks. Verdict: sampling error unresolved;
+  the honest error bar on <|m|> at L = 64, T = 2.3 is at least 0.0242.
+
+(4) tau.png: the autocorrelation time across the transition
+
+  L = 32: peak tau_int = 229.40 sweeps at T = 2.30; flat ends 1.62 .. 2.85
+          sweeps; rise 81x; reference 190, ratio 1.21
+  L = 64: peak tau_int = 607.71 sweeps at T = 2.30; flat ends 1.65 .. 2.95
+          sweeps; rise 206x; reference 670, ratio 0.91
+
+  pass: both curves flat and of order one away from T_c, L = 64 spike taller,
+  and each peak within a factor of two of the reference.
+
+  The rise from the coldest flat value to the peak is 229.40 / 1.62 = 142x for
+  L = 32 and 607.71 / 1.65 = 368x for L = 64, both more than a factor of a
+  hundred. tau.py prints the more conservative ratio against the largest flat
+  value at either end (81x for L = 32, 206x for L = 64); either way the L = 64
+  curve is the taller spike, by a factor 2.65.
+
+(5) chi-bootstrap.png: the sampling error of T_c
+
+Block bootstrap of the window runs, 500 replicates at each block length,
+resampling every temperature and size separately:
+
+  block length   successful   failed   mean T_c   bootstrap error
+      2000          500/500      0      2.2779     0.0097
+      4000          500/500      0      2.2778     0.0100
+      8000          500/500      0      2.2756     0.0100
+  Rust reference             0.0096    0.0095    0.0092
+
+  stability: the three errors span 0.0003, within a tenth of their mean 0.0099
+  -> the sampling error is STABLE (resolved).
+
+  no failed fits: no replicate produced a parabola that fails to bend downward
+  or a vertex outside its five fitted temperatures.
+
+  The central fit is unchanged from Part 2: T_peak(32) = 2.3495,
+  T_peak(64) = 2.3108, T_c = 2.2720, a deviation of +0.12% from 2.26919 (the
+  Part 2 gate, |deviation| < 2%). The bootstrap error of 0.01 is smaller than
+  the finite-size shift of about +0.008 and does not cover it.
+
+Extension: how long is long enough
+
+  measured sweep rate, L = 64, T = 2.3, 3 timed runs of 2000 discarded plus
+  100000 measured sweeps:
+
+    ising --update metropolis --l 64 --t-from 2.3 --t-to 2.3 --t-step 0.05 \
+      --discard 2000 --measure 100000 --seed 7 --out /tmp/rate-l64
+
+    6.49 s, 6.52 s, 6.48 s for 102000 sweeps -> 15700.5 sweeps/s (15644 to 15741)
+    cross-check, the committed window-l64 ramp: 1326000 sweeps in 84.59 s
+    -> 15675.6 sweeps/s, within 0.2%
+
+  n_eff = n / (2 tau_int) = 100000 / (2 * 607.71) = 82.3 independent samples
+  N     = 2 tau_int * n   = 121542000 sweeps, 1215 times the current run
+  hours = N / 15700.5 / 3600 = 2.15 hours (about 2 h 9 min)
+
+Independent cross-check with the course's own checker
+
+The shipped diagnostic recomputes tau_int, the peak fits and T_c from the raw
+rows with its own direct autocorrelation sum. Its legacy layout was built in
+/tmp/legacy-check (window rows inside [2.0, 2.6], coarse rows outside) and both
+of its entry points were run there:
+
+  .../week3/checker/check /tmp/legacy-check
+    PASS: T_c = 2.2720 within 2% of Onsager 2.26919 (peaks: L32 2.3495, L64 2.3108)
+    measured: L=64 chi peaks at T=2.3; tau_int(|M|) there = 607.715 sweeps
+              (required >= 5.0)
+    measured: L=32 mean|M| at lowest T=1.5 = 0.9867, L=64 = 0.9866 (>= 0.9)
+
+  .../week3/checker/tau /tmp/legacy-check
+    26 rows in the critical window; every tau_int, naive error, binned error
+    and ratio matches evidence/errors.txt exactly, e.g.
+    L=64 T=2.30 tau_int=607.71 naive=6.023e-04 binned=1.847e-02 ratio=30.66
+    L=32 T=2.30 tau_int=229.40 naive=6.875e-04 binned=1.284e-02 ratio=18.68
+
+The one number that is not identical is the answer key's own run: it drew a
+different random stream, so its mean |m| at T = 2.3 and its tau_int differ from
+these by about one sampling error, not by a change of estimator.

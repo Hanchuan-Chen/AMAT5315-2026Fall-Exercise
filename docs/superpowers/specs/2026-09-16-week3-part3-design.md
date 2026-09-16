@@ -283,5 +283,27 @@ present, so it is recorded here and repeated in the report.
 
 ## Measured extension numbers
 
-(Filled in by the evidence commit that follows `errors.py`; see
-`/tmp/amat5315-w3/part3-extension.md` for the copy the wrap-up phase quotes.)
+At `L = 64`, `T = 2.3`, the window run measured `n = 100000` sweeps and
+`tau_int = 607.71` sweeps (the `L = 64`, `T = 2.30` row of
+`week3/evidence/errors.txt`), with a naive error of `0.000602` and a 50-block
+error of `0.0184699`:
+
+```text
+n_eff = n / (2 tau_int) = 100000 / (2 * 607.71)      = 82.3 independent samples
+N     = 2 tau_int * n   = 2 * 607.71 * 100000        = 121542000 sweeps
+h     = N / 15700.5 sweeps/s / 3600                  = 2.15 hours
+```
+
+`N` is 1215 times the run that exists today, about 2 h 9 min of the same
+machine. The sweep rate is measured, not assumed: three timed `ising` runs at
+`L = 64`, `T = 2.3` (`--discard 2000 --measure 100000 --seed 7`) took 6.49,
+6.52 and 6.48 s for 102000 sweeps each, a mean of 15700.5 sweeps/s (range
+15644 to 15741), and the committed `window-l64` ramp implies 15675.6 sweeps/s
+from 1326000 sweeps in 84.59 s, within 0.2%. Because `tau_int` is assumed
+fixed, 2.15 hours is a lower bound: the honest error is unresolved at
+`T = 2.3` (the binning curve has no plateau), and the same run length also
+buys only about 82 effective samples, so the mean `|m|` would still carry an
+error of `0.0006 * sqrt(1215) = 0.021` while the naive bar claims `0.0006`.
+
+The wrap-up phase quotes the copy at
+`/tmp/amat5315-w3/part3-extension.md`.
