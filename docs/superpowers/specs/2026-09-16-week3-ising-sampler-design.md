@@ -69,9 +69,9 @@ body and never touches the command line.
 
 `t_grid = { t_from + k * t_step : k = 0, 1, 2, ... ; value <= t_to }`, evaluated
 in ascending order and stopped at the first value above `t_to`. `t_to` is
-therefore included exactly when the step lands on it (`1.5 .. 3.5` step `0.05`
-gives 41 temperatures ending at `3.5`; `1.5 .. 3.5` step `0.1` gives 21 values
-because `3.5` is not reached).
+therefore included exactly when the step lands on it: `1.5 .. 3.5` step `0.05`
+gives 41 temperatures ending at `3.5`, while `1.5 .. 3.55` step `0.1` gives 21
+temperatures ending at `3.5` because `3.55` is never reached.
 
 Each candidate is rounded to nine decimals before the comparison so that binary
 floating point cannot drop the last point (`1.5 + 40 * 0.05` is
