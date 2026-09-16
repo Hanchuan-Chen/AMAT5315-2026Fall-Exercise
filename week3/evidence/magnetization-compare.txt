@@ -1,0 +1,35 @@
+week3 part 4 - the two samplers and the cluster critical temperature
+
+L = 64, critical window 2.00 .. 2.60 (13 temperatures). Metropolis rows come from artifacts/window-l64 (2000 discarded sweeps, 100000 measured sweeps per temperature); cluster rows come from artifacts/wolff-l64 and artifacts/wolff-l32 (20000 discarded moves, 100000 measured moves per temperature).
+
+(1) sampler agreement, Equation 18
+
+  block-bootstrap error of <|m|> at T = 2.30, 500 replicates per block length
+      block   metropolis (sweeps)     wolff (moves)  stable?
+       2000              0.017797          0.001843  metropolis unstable, wolff STABLE
+       4000              0.019760          0.001866  metropolis unstable, wolff STABLE
+       8000              0.018614          0.001795  metropolis unstable, wolff STABLE
+
+  mean |m| at T = 2.30: metropolis 0.4724, wolff 0.4350 (difference +0.0375)
+  errors used: 8000-step blocks, metropolis 0.018614, wolff 0.001795
+  d = |0.4724 - 0.4350| / sqrt(0.018614^2 + 0.001795^2) = 2.00
+  verdict: agreement provisional: d = 2.00 <= 3, but the metropolis error still depends on the block length
+
+  The sheet requires both errors to be stable in Part 3's block-length sense before agreement is reported as settled. Part 3 found the metropolis error at L = 64, T = 2.3 unresolved (the binning curve of evidence/acf-binning.png still rises at 20000-sweep blocks); if the metropolis error is still unstable here the verdict is provisional whatever d is, and a d above 3 would be a discrepancy to investigate rather than a sampler failure.
+
+(2) the cluster critical temperature
+
+  L = 32: largest chi at T = 2.35 (chi = 20.3398); five-point fit T_peak = 2.3489 over T = 2.25 .. 2.45
+  L = 64: largest chi at T = 2.30 (chi = 69.3322); five-point fit T_peak = 2.3121 over T = 2.20 .. 2.40
+  T_c = 2 T_peak(64) - T_peak(32) = 2.2752; exact 2.26919; deviation +0.26% (gate: within 2%)
+
+  block-bootstrap error of the cluster T_c
+      block  successful  failed     error
+       2000      500/500       0    0.0006
+       4000      500/500       0    0.0006
+       8000      500/500       0    0.0006
+  stability: stable: the three errors span 0.0000, within a tenth of their mean 0.0006
+  The cluster error is a sampling error only: the finite-size shift of Equation 11 and the five-point parabola's own bias are outside it, so it is a lower bound on the uncertainty of T_c.
+
+chart
+  /Users/eureka/Documents/Codex/2026-09-02/ban/AMAT5315-2026Fall-Exercise/week3/evidence/magnetization-compare.png

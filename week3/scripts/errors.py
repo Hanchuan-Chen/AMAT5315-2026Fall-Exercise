@@ -99,6 +99,43 @@ def read_series(folder: Path) -> tuple[int, list[tuple[float, np.ndarray]]]:
     return lattice, [(t, np.array(columns[t], dtype=float)) for t in order]
 
 
+def read_wolff_series(
+    folder: Path,
+) -> tuple[int, list[tuple[float, np.ndarray, np.ndarray]]]:
+    """Return `(L, [(T, signed M, cluster_size), ...])` for a Wolff run.
+
+    The streaming contract is `read_series`'s: one pass over `series.jsonl`,
+    grouped by temperature, no parsed row kept. The cluster column is the
+    number of spins flipped by each move, which is what Part 4's Equation 17
+    needs (`tau_work = tau_moves * <c> / L^2`).
+    """
+    run = json.loads((folder / "run.json").read_text())
+    lattice = int(run["L"])
+    order: list[float] = []
+    columns: dict[float, list[list[float]]] = {}
+    with (folder / "series.jsonl").open() as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            t = float(row["T"])
+            column = columns.get(t)
+            if column is None:
+                order.append(t)
+                column = columns[t] = [[], []]
+            column[0].append(row["M"])
+            column[1].append(row["cluster_size"])
+    return lattice, [
+        (
+            t,
+            np.array(columns[t][0], dtype=float),
+            np.array(columns[t][1], dtype=float),
+        )
+        for t in order
+    ]
+
+
 def naive_stderr(a: np.ndarray) -> float:
     """`s / sqrt(n)` with `s` the sample standard deviation (ddof = 1)."""
     a = np.asarray(a, dtype=float)
