@@ -127,3 +127,8 @@ checks on the sampler itself
   measured moves of a run are unchanged when the run is lengthened, which is
   the sheet's warning that the recording interval must not depend on the
   cluster sizes just seen.
+
+  the committed L = 32 run was re-run from the same command line into a scratch
+  folder: 16.04 s, and both series.jsonl and run.json came out with the same
+  MD5 as the committed-artifacts copy (b26f09ffa4e6e6c310ebd5cb705d82fb and
+  095181a0fc627ad877b4b11596b526e3), with byte-identical stdout.
