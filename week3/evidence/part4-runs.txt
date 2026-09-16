@@ -94,3 +94,36 @@ what the runs say
 
 The two analysis reports hold the full tables; this file records the runs that
 produced the rows they read.
+
+checks on the sampler itself
+
+  cargo test --release        45 tests, all passing (11 of them in tests/wolff.rs)
+  cargo clippy --all-targets --all-features -- -D warnings    clean
+  .venv/bin/python -m unittest scripts.test_peaks scripts.test_part3 scripts.test_part4
+                              50 tests, all passing
+
+  tests/wolff.rs pins Equation 16 at T = 2.0, 2.3, 2.26919, 2.6 and 3.0, the
+  hand-checkable clusters (a checkerboard grows only its seed; an all-up
+  lattice at T -> 0 grows all L^2; a one-down lattice grows exactly the 15 up
+  sites from an up seed and exactly the down site from the down seed), that
+  every grown site has the seed's spin, that the changed sites of a move are
+  exactly the grown set and form a connected set, that the whole cluster flips
+  at T = 1.0 .. 10.0, and that one seed reproduces the cluster-size sequence.
+
+  The strongest check is the last one: on a 3 x 3 torus all 512
+  configurations can be enumerated, so the chain is compared against the exact
+  Boltzmann distribution at T = 2.3 rather than only against rules about the
+  moves. After 20000 discarded moves it records 200000 moves and its total
+  variation distance from the exact configuration law is well under 0.1
+  (an exact sampler sits near sqrt(512 / 2 pi n) = 0.015 at that length); the
+  mean energy and mean |m| match the exact values too. The test has teeth: with
+  p changed to 1 - exp(-1/T) the same run reports a total variation distance of
+  0.545 and fails, so the check would catch a wrong bond probability or a flip
+  that did not move the whole cluster.
+
+  `--update wolff` also reproduces byte-identical artifacts for the same seed
+  and different artifacts for a different seed (tests/reproducibility.rs), and
+  the observation-interval test in tests/contract.rs shows that the first 20
+  measured moves of a run are unchanged when the run is lengthened, which is
+  the sheet's warning that the recording interval must not depend on the
+  cluster sizes just seen.
