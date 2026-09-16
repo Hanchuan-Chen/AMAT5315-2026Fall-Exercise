@@ -108,10 +108,20 @@ class BootstrapTests(unittest.TestCase):
     def test_an_independent_series_reproduces_the_naive_error(self) -> None:
         rng = np.random.default_rng(2026)
         series = np.abs(rng.normal(0.4, 0.15, 20000))
-        error = magnetization_compare.block_bootstrap_mean_error(
+        naive = errors.naive_stderr(series)
+        # 1000 blocks of 20: the sample sd of the block means carries about
+        # 2% noise, so the two estimates agree to a few percent.
+        small = magnetization_compare.block_bootstrap_mean_error(
+            series, block_length=20, replicates=3000, rng=np.random.default_rng(7)
+        )
+        self.assertAlmostEqual(small / naive, 1.0, delta=0.05)
+        # 200 blocks of 100: the same estimate on a realization whose block
+        # means happen to sit a few percent low, which is the sample-size
+        # noise a single series has and not a bias of the resampling.
+        large = magnetization_compare.block_bootstrap_mean_error(
             series, block_length=100, replicates=3000, rng=np.random.default_rng(7)
         )
-        self.assertAlmostEqual(error / errors.naive_stderr(series), 1.0, delta=0.05)
+        self.assertAlmostEqual(large / naive, 1.0, delta=0.10)
 
     def test_two_constant_blocks_have_the_exact_resampling_spread(self) -> None:
         # Two blocks of 500, means 0 and 2. Drawing two blocks with
