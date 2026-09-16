@@ -153,6 +153,12 @@ def read_run(folder: Path) -> tuple[int, dict[float, np.ndarray]]:
     return lattice, {t: m for t, m in series}
 
 
+def read_energy(folder: Path) -> tuple[int, dict[float, np.ndarray]]:
+    """`(L, {T: energy per site})` for one run folder."""
+    lattice, series = errors.read_series_energy(folder)
+    return lattice, {t: e for t, _, e in series}
+
+
 def cluster_window(artifacts: Path) -> dict[int, dict[float, np.ndarray]]:
     """`{L: {T: signed M}}` of the two cluster runs, for the bootstrap."""
     window: dict[int, dict[float, np.ndarray]] = {}
@@ -224,6 +230,32 @@ def main() -> None:
             "wolff": stability["wolff"][t_compare],
         },
     )
+
+    # A second observable, because a single matching mean does not establish
+    # that the two chains sample the same distribution. The energy is not the
+    # order parameter, so it is a genuinely different check on the samplers.
+    _, energy_metropolis = read_energy(args.artifacts / peaks.WINDOW_RUNS[LATTICE])
+    _, energy_wolff = read_energy(args.artifacts / CLUSTER_RUNS[LATTICE])
+    e_metropolis = float(energy_metropolis[t_compare].mean())
+    e_wolff = float(energy_wolff[t_compare].mean())
+    e_bars = {
+        "metropolis": block_errors(
+            energy_metropolis[t_compare], BLOCK_LENGTHS, args.replicates, args.seed
+        ),
+        "wolff": block_errors(
+            energy_wolff[t_compare], BLOCK_LENGTHS, args.replicates, args.seed
+        ),
+    }
+    d_energy = d_statistic(
+        e_metropolis,
+        e_wolff,
+        e_bars["metropolis"][ERROR_BLOCK],
+        e_bars["wolff"][ERROR_BLOCK],
+    )
+    energy_stable = {
+        name: chi_bootstrap.stability_verdict(e_bars[name])[0] for name in SAMPLERS
+    }
+    energy_verdict = agreement_verdict(d_energy, energy_stable)
 
     # The cluster susceptibility and its peaks come from the same window rows
     # the cluster bootstrap resamples, through the same fit Part 2 used.
@@ -402,6 +434,31 @@ def main() -> None:
         " metropolis error is still unstable here the verdict is provisional"
         " whatever d is, and a d above 3 would be a discrepancy to investigate"
         " rather than a sampler failure."
+    )
+    lines.append("")
+    lines.append("(1b) a second observable at the same temperature: energy per site")
+    lines.append("")
+    lines.append(
+        f"  machine-readable mean(E): metropolis {e_metropolis:+.4f},"
+        f" wolff {e_wolff:+.4f} (difference {e_metropolis - e_wolff:+.4f})"
+    )
+    lines.append(
+        "    "
+        + "  ".join(
+            f"{length}-step: metropolis {e_bars['metropolis'][length]:.5f},"
+            f" wolff {e_bars['wolff'][length]:.5f}"
+            for length in BLOCK_LENGTHS
+        )
+    )
+    lines.append(
+        f"  d(E) = {d_energy:.2f} with the {ERROR_BLOCK}-step errors;"
+        f" verdict: {energy_verdict}"
+    )
+    lines.append(
+        "  A single matching mean does not establish that the two chains sample"
+        " the same distribution, so the energy -- not the order parameter -- is"
+        " checked as well. Energy decorrelates faster than |m| at the transition,"
+        " which is why its bootstrap errors are the smaller pair here."
     )
     lines.append("")
     lines.append("(2) the cluster critical temperature")

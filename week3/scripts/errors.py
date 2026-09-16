@@ -80,10 +80,23 @@ def read_series(folder: Path) -> tuple[int, list[tuple[float, np.ndarray]]]:
     analysis needs are kept. A window run is 1.3 million rows; holding every
     parsed dict would waste several hundred megabytes for nothing.
     """
+    lattice, rows = read_columns(folder, ("M",))
+    return lattice, [(t, m) for t, m in rows]
+
+
+def read_columns(
+    folder: Path, columns: tuple[str, ...]
+) -> tuple[int, list[tuple[float, np.ndarray, ...]]]:
+    """Return `(L, [(T, one array per named column), ...])` in ramp order.
+
+    Every reader here is this one streaming pass over `series.jsonl` with a
+    different column list, so the row parsing and the grouping by temperature
+    exist once. The arrays come back in the order the names were given.
+    """
     run = json.loads((folder / "run.json").read_text())
     lattice = int(run["L"])
     order: list[float] = []
-    columns: dict[float, list[float]] = {}
+    buckets: dict[float, list[list[float]]] = {}
     with (folder / "series.jsonl").open() as handle:
         for line in handle:
             line = line.strip()
@@ -91,12 +104,20 @@ def read_series(folder: Path) -> tuple[int, list[tuple[float, np.ndarray]]]:
                 continue
             row = json.loads(line)
             t = float(row["T"])
-            column = columns.get(t)
-            if column is None:
+            bucket = buckets.get(t)
+            if bucket is None:
                 order.append(t)
-                column = columns[t] = []
-            column.append(row["M"])
-    return lattice, [(t, np.array(columns[t], dtype=float)) for t in order]
+                bucket = buckets[t] = [[] for _ in columns]
+            for name, values in zip(columns, bucket):
+                values.append(row[name])
+    return lattice, [
+        (t, *(np.array(values, dtype=float) for values in buckets[t])) for t in order
+    ]
+
+
+def read_series_energy(folder: Path) -> tuple[int, list[tuple[float, np.ndarray, np.ndarray]]]:
+    """Return `(L, [(T, signed M, energy per site), ...])` for one run folder."""
+    return read_columns(folder, ("M", "E"))
 
 
 def read_wolff_series(
@@ -109,31 +130,7 @@ def read_wolff_series(
     number of spins flipped by each move, which is what Part 4's Equation 17
     needs (`tau_work = tau_moves * <c> / L^2`).
     """
-    run = json.loads((folder / "run.json").read_text())
-    lattice = int(run["L"])
-    order: list[float] = []
-    columns: dict[float, list[list[float]]] = {}
-    with (folder / "series.jsonl").open() as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            row = json.loads(line)
-            t = float(row["T"])
-            column = columns.get(t)
-            if column is None:
-                order.append(t)
-                column = columns[t] = [[], []]
-            column[0].append(row["M"])
-            column[1].append(row["cluster_size"])
-    return lattice, [
-        (
-            t,
-            np.array(columns[t][0], dtype=float),
-            np.array(columns[t][1], dtype=float),
-        )
-        for t in order
-    ]
+    return read_columns(folder, ("M", "cluster_size"))
 
 
 def naive_stderr(a: np.ndarray) -> float:

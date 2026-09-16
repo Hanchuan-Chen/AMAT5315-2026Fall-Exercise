@@ -218,6 +218,20 @@ class ClusterReaderTests(unittest.TestCase):
                 tau_work, tau_moves * (7.0 + 4.0 + 11.0) / 3.0 / 16.0, places=12
             )
 
+    def test_read_series_energy_returns_the_energy_per_site(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            self.make_run(directory)
+            lattice, series = errors.read_series_energy(directory)
+            self.assertEqual(lattice, 4)
+            temperature, m, energy = series[0]
+            self.assertEqual(temperature, 2.0)
+            np.testing.assert_allclose(m, [0.5, -0.25, 0.75])
+            np.testing.assert_allclose(energy, [-1.5, -1.25, -1.75])
+            # The two-part reader is the same pass as the one-column reader.
+            _, plain = errors.read_series(directory)
+            np.testing.assert_allclose(plain[0][1], m)
+
 
 if __name__ == "__main__":
     unittest.main()
