@@ -1,0 +1,30 @@
+week3 part 4 - work per independent sample at L = 64
+
+Metropolis rows: artifacts/window-l64, tau_int of |M| from Equation 13, already in sweeps (100000 measured sweeps at each of the 13 temperatures, 2000 discarded).
+Wolff rows: artifacts/wolff-l64, tau_moves of |M| from the same Equation 13 estimator in cluster moves, times <c> / L^2 (Equation 17; 100000 measured moves at each temperature, 20000 discarded).
+
+       T  metropolis tau  wolff tau (moves)  wolff <c>  wolff tau_work    ratio
+    2.00            8.62              0.980     3397.9           0.813     10.6
+    2.05           11.86              1.098     3261.4           0.875     13.6
+    2.10           21.27              1.224     3088.7           0.923     23.0
+    2.15           43.06              1.470     2870.4           1.030     41.8
+    2.20           60.56              1.876     2535.4           1.161     52.1
+    2.25          520.76              3.099     1937.2           1.466    355.2
+    2.30          607.71              4.476      935.6           1.022    594.4
+    2.35          370.29              3.633      337.7           0.299   1236.4
+    2.40          106.06              3.453      157.7           0.133    797.8
+    2.45           85.17              4.436       93.1           0.101    844.6
+    2.50           45.53              5.780       63.7           0.090    506.8
+    2.55           29.39              7.660       46.4           0.087    338.4
+    2.60           24.15             10.391       35.6           0.090    267.7
+
+  at T = 2.30: 607.7 sweeps against 4.48 moves x 935.6 / 4096 = 1.022 sweeps, so the cluster sampler does 594 times less spin-update work per independent sample
+  the largest ratio on the window grid is 1236 at T = 2.35; the smallest is 10.6 at T = 2.00
+
+why more independent samples do not remove the remaining bias
+
+  The cluster chain decorrelates in a few moves instead of hundreds of sweeps, so the same recorded length holds hundreds of times more independent samples and the sampling error of <|m|> and of T_c falls with 1/sqrt(n_eff). Three things do not fall: the finite-size shift, which the two-size extrapolation of Equation 11 cancels only to leading order in 1/L; the five-point parabola's own bias, because a parabola through five points of an asymmetric peak puts its vertex off the true maximum by a fixed offset that more sweeps at the same 13 temperatures cannot move; and any bias of the single random stream itself, such as residual equilibration, which a bootstrap over that stream's own rows cannot see. The bootstrap error reported in magnetization-compare.txt is therefore a sampling error only, and a lower bound on the uncertainty of T_c.
+
+  The conversion is spin-update work, not wall clock: growing a cluster costs more per spin than proposing a single flip, and the recorded move does the bookkeeping for the whole cluster. The ratio is an upper bound on the elapsed-time speedup at the same temperature.
+
+chart /Users/eureka/Documents/Codex/2026-09-02/ban/AMAT5315-2026Fall-Exercise/week3/evidence/tau-compare.png
