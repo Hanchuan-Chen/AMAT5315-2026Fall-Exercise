@@ -8,6 +8,7 @@ use rand_chacha::ChaCha8Rng;
 use crate::artifacts::{Recorder, write_run_json};
 use crate::lattice::Lattice;
 use crate::metropolis::sweep;
+use crate::wolff::cluster_flip;
 
 /// Temperatures closer than this are the same grid point.
 const GRID_EPSILON: f64 = 1e-9;
@@ -20,6 +21,32 @@ pub const MAX_GRID: usize = 100_000;
 pub enum Update {
     Metropolis,
     Wolff,
+}
+
+impl Update {
+    /// The name this rule writes into `run.json`.
+    pub fn name(self) -> &'static str {
+        match self {
+            Update::Metropolis => "metropolis",
+            Update::Wolff => "wolff",
+        }
+    }
+
+    /// The unit of one step, which is also what `run.json` calls the clock.
+    pub fn time_unit(self) -> &'static str {
+        match self {
+            Update::Metropolis => "sweep",
+            Update::Wolff => "cluster_flip",
+        }
+    }
+
+    /// The quantity in the third column of the printed table.
+    pub fn statistic(self) -> &'static str {
+        match self {
+            Update::Metropolis => "acceptance",
+            Update::Wolff => "mean_cluster_size",
+        }
+    }
 }
 
 /// The validated settings of one run.
@@ -42,9 +69,49 @@ pub struct RunConfig {
 pub struct TemperatureResult {
     pub t: f64,
     pub mean_abs_m: f64,
+    /// Metropolis: accepted proposals per proposal over discard + measure.
+    /// Zero for a Wolff run, which has no proposals.
     pub acceptance: f64,
+    /// Wolff: spins flipped per step over discard + measure. Zero for a
+    /// Metropolis run, whose steps flip one spin per accepted proposal.
+    pub mean_cluster_size: f64,
     pub frames: u64,
     pub measured: u64,
+}
+
+/// What one step of the chosen rule cost.
+#[derive(Clone, Copy, Debug, Default)]
+struct StepStats {
+    /// Accepted proposals (Metropolis only).
+    accepted: u64,
+    /// Proposals made (Metropolis only).
+    proposals: u64,
+    /// Spins flipped by this step (Wolff only).
+    cluster_size: u64,
+}
+
+/// One step: an `l * l`-proposal sweep, or one cluster flip.
+fn one_step(
+    update: Update,
+    lattice: &mut Lattice,
+    temperature: f64,
+    rng: &mut ChaCha8Rng,
+) -> StepStats {
+    match update {
+        Update::Metropolis => {
+            let stats = sweep(lattice, temperature, rng);
+            StepStats {
+                accepted: stats.accepted,
+                proposals: stats.proposals,
+                cluster_size: 0,
+            }
+        }
+        Update::Wolff => StepStats {
+            accepted: 0,
+            proposals: 0,
+            cluster_size: cluster_flip(lattice, temperature, rng) as u64,
+        },
+    }
 }
 
 /// `{ t_from + k * t_step <= t_to }`, ascending, rounded to nine decimals.
@@ -123,6 +190,12 @@ impl RunConfig {
 /// from the lattice the previous temperature finished on. One `ChaCha8Rng`
 /// seeded from `config.seed` supplies the whole ramp, so two runs with the same
 /// arguments write identical bytes.
+///
+/// One step is a full sweep under Metropolis and one cluster flip under Wolff;
+/// `discard` and `measure` count whatever the chosen rule calls a step, and a
+/// Wolff move is recorded after every move, never after an accumulated number
+/// of flipped spins, so the observation interval cannot depend on the cluster
+/// sizes just seen.
 pub fn run_ramp<F>(
     config: &RunConfig,
     mut on_temperature: F,
@@ -130,46 +203,52 @@ pub fn run_ramp<F>(
 where
     F: FnMut(&TemperatureResult),
 {
-    if config.update != Update::Metropolis {
-        return Err(
-            "--update wolff lands in a later phase; this build implements metropolis only"
-                .to_string(),
-        );
-    }
     config.validate()?;
     let grid = config.t_grid();
     std::fs::create_dir_all(&config.out)
         .map_err(|error| format!("create {}: {error}", config.out.display()))?;
     write_run_json(config, &grid)?;
-    let mut recorder = Recorder::create(&config.out, config.l, config.every)?;
+    let mut recorder = Recorder::create(&config.out, config.l, config.update, config.every)?;
     let mut rng = ChaCha8Rng::seed_from_u64(config.seed);
     let mut lattice = Lattice::all_up(config.l);
-    let mut global_sweep = 0u64;
+    let mut global_step = 0u64;
     let mut results = Vec::with_capacity(grid.len());
 
     for &temperature in &grid {
         let mut accepted = 0u64;
         let mut proposals = 0u64;
+        let mut steps = 0u64;
+        let mut flipped = 0u64;
         for _ in 0..config.discard {
-            let stats = sweep(&mut lattice, temperature, &mut rng);
+            let stats = one_step(config.update, &mut lattice, temperature, &mut rng);
             accepted += stats.accepted;
             proposals += stats.proposals;
-            global_sweep += 1;
+            steps += 1;
+            flipped += stats.cluster_size;
+            global_step += 1;
         }
 
         let mut sum_abs_m = 0.0;
         let mut frames = 0u64;
         for step in 1..=config.measure {
-            let stats = sweep(&mut lattice, temperature, &mut rng);
+            let stats = one_step(config.update, &mut lattice, temperature, &mut rng);
             accepted += stats.accepted;
             proposals += stats.proposals;
-            global_sweep += 1;
+            steps += 1;
+            flipped += stats.cluster_size;
+            global_step += 1;
 
             let m = lattice.magnetization();
             sum_abs_m += m.abs();
-            recorder.write_series_row(temperature, step, m, lattice.energy_per_site())?;
+            recorder.write_series_row(
+                temperature,
+                step,
+                m,
+                lattice.energy_per_site(),
+                stats.cluster_size,
+            )?;
             if config.every > 0 && step % config.every == 0 {
-                recorder.write_spin_frame(temperature, global_sweep, m, lattice.spins())?;
+                recorder.write_spin_frame(temperature, global_step, m, lattice.spins())?;
                 frames += 1;
             }
         }
@@ -177,7 +256,12 @@ where
         let result = TemperatureResult {
             t: temperature,
             mean_abs_m: sum_abs_m / config.measure as f64,
-            acceptance: accepted as f64 / proposals as f64,
+            acceptance: if proposals == 0 {
+                0.0
+            } else {
+                accepted as f64 / proposals as f64
+            },
+            mean_cluster_size: flipped as f64 / steps as f64,
             frames,
             measured: config.measure,
         };

@@ -9,6 +9,7 @@ pub mod cli;
 pub mod lattice;
 pub mod metropolis;
 pub mod ramp;
+pub mod wolff;
 
 pub use lattice::Lattice;
 pub use ramp::{RunConfig, TemperatureResult, Update, temperature_grid};

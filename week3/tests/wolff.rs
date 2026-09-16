@@ -38,7 +38,7 @@ fn one_down(l: usize, down: usize) -> Lattice {
 
 fn checkerboard(l: usize) -> Lattice {
     let spins: Vec<i8> = (0..l * l)
-        .map(|k| if (k / l + k % l) % 2 == 0 { 1 } else { -1 })
+        .map(|k| if (k / l + k % l).is_multiple_of(2) { 1 } else { -1 })
         .collect();
     Lattice::from_spins(l, spins).unwrap()
 }
@@ -254,5 +254,8 @@ fn the_same_seed_reproduces_the_cluster_size_sequence() {
     assert_eq!(first, second);
     assert_eq!(first_lattice, second_lattice);
     let (other, _) = sequence(1042);
-    assert_ne!(first, other, "seed 1042 produced the same cluster sizes as 42");
+    assert_ne!(
+        first, other,
+        "seed 1042 produced the same cluster sizes as 42"
+    );
 }

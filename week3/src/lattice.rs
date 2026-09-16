@@ -44,6 +44,11 @@ impl Lattice {
         self.l
     }
 
+    /// Number of sites, `l * l`.
+    pub fn site_count(&self) -> usize {
+        self.l * self.l
+    }
+
     pub fn spins(&self) -> &[i8] {
         &self.spins
     }
@@ -103,8 +108,16 @@ impl Lattice {
         self.magnetization().abs()
     }
 
+    /// Flip the spin at a row-major index.
+    ///
+    /// The cluster update collects indices while it grows, so it flips through
+    /// this entry point rather than converting each one back to a coordinate.
+    pub fn flip_index(&mut self, index: usize) {
+        self.spins[index] = -self.spins[index];
+    }
+
     pub fn flip(&mut self, row: usize, col: usize) {
         let index = self.index(row, col);
-        self.spins[index] = -self.spins[index];
+        self.flip_index(index);
     }
 }

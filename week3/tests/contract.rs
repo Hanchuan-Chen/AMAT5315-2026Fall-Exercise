@@ -680,7 +680,13 @@ fn wolff_series_rows_carry_the_flipped_cluster_size() {
     assert_eq!(lines[0], "T\tmean|M|\tmean_cluster_size");
     let printed: Vec<f64> = lines[1..]
         .iter()
-        .map(|line| line.split('\t').nth(2).expect("third column").parse().unwrap())
+        .map(|line| {
+            line.split('\t')
+                .nth(2)
+                .expect("third column")
+                .parse()
+                .unwrap()
+        })
         .collect();
     for (index, printed) in printed.iter().enumerate() {
         let block = &sizes[index * 5..(index + 1) * 5];
@@ -717,7 +723,12 @@ fn wolff_stdout_counts_discarded_cluster_moves_too() {
         "7",
     ]);
     assert_eq!(finished.code(), Some(0), "stderr: {}", finished.stderr());
-    let line = finished.stdout().lines().nth(1).expect("one row").to_string();
+    let line = finished
+        .stdout()
+        .lines()
+        .nth(1)
+        .expect("one row")
+        .to_string();
     let third: f64 = line.split('\t').nth(2).unwrap().parse().unwrap();
     assert!((1.0..=64.0).contains(&third), "printed {third}");
     let recorded: Vec<u64> = finished
@@ -814,8 +825,16 @@ fn the_observation_interval_does_not_depend_on_the_cluster_sizes() {
     ];
     let short = run(&[shared.as_slice(), &["--measure", "20"]].concat());
     let long = run(&[shared.as_slice(), &["--measure", "40"]].concat());
-    let short_rows: Vec<String> = short.text("series.jsonl").lines().map(str::to_string).collect();
-    let long_rows: Vec<String> = long.text("series.jsonl").lines().map(str::to_string).collect();
+    let short_rows: Vec<String> = short
+        .text("series.jsonl")
+        .lines()
+        .map(str::to_string)
+        .collect();
+    let long_rows: Vec<String> = long
+        .text("series.jsonl")
+        .lines()
+        .map(str::to_string)
+        .collect();
     assert_eq!(short_rows.len(), 20);
     assert_eq!(long_rows.len(), 40);
     assert_eq!(
