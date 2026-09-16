@@ -598,12 +598,111 @@ fn invalid_settings_fail_before_any_file_is_written() {
 }
 
 #[test]
-fn wolff_parses_but_lands_in_a_later_phase() {
-    let later = run(&[
+fn wolff_run_json_names_the_cluster_flip_time_unit() {
+    let finished = run(&[
         "--update",
         "wolff",
         "--l",
-        "4",
+        "8",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.1",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "0",
+        "--measure",
+        "5",
+        "--seed",
+        "7",
+    ]);
+    assert_eq!(finished.code(), Some(0), "stderr: {}", finished.stderr());
+    let value = finished.json("run.json");
+    assert_eq!(
+        sorted_keys(&value),
+        [
+            "L",
+            "discard",
+            "measure",
+            "sample_every",
+            "seed",
+            "t_grid",
+            "time_unit",
+            "update"
+        ]
+    );
+    assert_eq!(value["update"], "wolff");
+    assert_eq!(value["time_unit"], "cluster_flip");
+    assert_eq!(value["L"], 8);
+    assert_eq!(value["sample_every"], 1);
+}
+
+#[test]
+fn wolff_series_rows_carry_the_flipped_cluster_size() {
+    let finished = run(&[
+        "--update",
+        "wolff",
+        "--l",
+        "8",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.1",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "0",
+        "--measure",
+        "5",
+        "--seed",
+        "7",
+    ]);
+    let rows = finished.jsonl("series.jsonl");
+    assert_eq!(rows.len(), 10);
+    let mut sizes = Vec::new();
+    for row in &rows {
+        assert_eq!(
+            sorted_keys(row),
+            ["E", "L", "M", "T", "cluster_size", "sweep"]
+        );
+        assert_eq!(row["L"], 8);
+        let size = row["cluster_size"].as_u64().expect("integer cluster size");
+        assert!((1..=64).contains(&size), "cluster size {size}");
+        sizes.push(size);
+    }
+    assert!(sizes.iter().any(|size| *size > 1), "sizes were {sizes:?}");
+
+    // With no discard, the printed mean cluster size is exactly the mean of
+    // the recorded sizes.
+    let stdout = finished.stdout();
+    let lines: Vec<&str> = stdout.lines().collect();
+    assert_eq!(lines[0], "T\tmean|M|\tmean_cluster_size");
+    let printed: Vec<f64> = lines[1..]
+        .iter()
+        .map(|line| line.split('\t').nth(2).expect("third column").parse().unwrap())
+        .collect();
+    for (index, printed) in printed.iter().enumerate() {
+        let block = &sizes[index * 5..(index + 1) * 5];
+        let mean = block.iter().sum::<u64>() as f64 / block.len() as f64;
+        assert!(
+            (printed - mean).abs() < 1e-4,
+            "T block {index}: printed {printed}, recorded {mean}"
+        );
+        assert!(
+            (1.0..=64.0).contains(printed),
+            "printed cluster size {printed}"
+        );
+    }
+}
+
+#[test]
+fn wolff_stdout_counts_discarded_cluster_moves_too() {
+    let finished = run(&[
+        "--update",
+        "wolff",
+        "--l",
+        "8",
         "--t-from",
         "2.0",
         "--t-to",
@@ -611,16 +710,123 @@ fn wolff_parses_but_lands_in_a_later_phase() {
         "--t-step",
         "0.1",
         "--discard",
-        "0",
+        "40",
         "--measure",
-        "1",
+        "20",
         "--seed",
-        "1",
+        "7",
     ]);
-    assert_eq!(later.code(), Some(1));
-    assert!(later.stderr().contains("wolff"), "{}", later.stderr());
-    assert!(!later.exists("run.json"));
+    assert_eq!(finished.code(), Some(0), "stderr: {}", finished.stderr());
+    let line = finished.stdout().lines().nth(1).expect("one row").to_string();
+    let third: f64 = line.split('\t').nth(2).unwrap().parse().unwrap();
+    assert!((1.0..=64.0).contains(&third), "printed {third}");
+    let recorded: Vec<u64> = finished
+        .jsonl("series.jsonl")
+        .iter()
+        .map(|row| row["cluster_size"].as_u64().unwrap())
+        .collect();
+    let measured = recorded.iter().sum::<u64>() as f64 / recorded.len() as f64;
+    assert!(
+        (third - measured).abs() < 0.5 * measured,
+        "printed {third} is far from the measured {measured}"
+    );
+}
 
+#[test]
+fn wolff_sweep_counters_follow_the_metropolis_rules() {
+    let finished = run(&[
+        "--update",
+        "wolff",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.2",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "3",
+        "--measure",
+        "8",
+        "--every",
+        "2",
+        "--seed",
+        "2026",
+    ]);
+    let series: Vec<u64> = finished
+        .jsonl("series.jsonl")
+        .iter()
+        .map(|row| row["sweep"].as_u64().expect("sweep"))
+        .collect();
+    assert_eq!(series, (0..3).flat_map(|_| 1..=8).collect::<Vec<u64>>());
+
+    let frames: Vec<u64> = finished
+        .jsonl("spins.jsonl")
+        .iter()
+        .map(|frame| frame["sweep"].as_u64().expect("sweep"))
+        .collect();
+    // One step is one cluster flip, so the global counter moves by one per
+    // recorded frame just as it does for a Metropolis sweep.
+    assert_eq!(frames, vec![5, 7, 9, 11, 16, 18, 20, 22, 27, 29, 31, 33]);
+
+    let mut zero = vec![
+        "--update",
+        "wolff",
+        "--l",
+        "4",
+        "--t-from",
+        "2.0",
+        "--t-to",
+        "2.1",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "2",
+        "--measure",
+        "6",
+        "--seed",
+        "2026",
+    ];
+    zero.extend(["--every", "0"]);
+    let zero_every = run(&zero);
+    assert!(zero_every.exists("series.jsonl"));
+    assert!(!zero_every.exists("spins.jsonl"));
+}
+
+#[test]
+fn the_observation_interval_does_not_depend_on_the_cluster_sizes() {
+    let shared = [
+        "--update",
+        "wolff",
+        "--l",
+        "8",
+        "--t-from",
+        "2.3",
+        "--t-to",
+        "2.3",
+        "--t-step",
+        "0.1",
+        "--discard",
+        "0",
+        "--seed",
+        "2026",
+    ];
+    let short = run(&[shared.as_slice(), &["--measure", "20"]].concat());
+    let long = run(&[shared.as_slice(), &["--measure", "40"]].concat());
+    let short_rows: Vec<String> = short.text("series.jsonl").lines().map(str::to_string).collect();
+    let long_rows: Vec<String> = long.text("series.jsonl").lines().map(str::to_string).collect();
+    assert_eq!(short_rows.len(), 20);
+    assert_eq!(long_rows.len(), 40);
+    assert_eq!(
+        short_rows,
+        long_rows[..20],
+        "the first twenty measured moves changed with the run length"
+    );
+}
+
+#[test]
+fn an_unknown_update_is_rejected() {
     let unknown = run(&[
         "--update",
         "glauber",
