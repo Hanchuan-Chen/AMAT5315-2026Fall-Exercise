@@ -38,7 +38,13 @@ fn one_down(l: usize, down: usize) -> Lattice {
 
 fn checkerboard(l: usize) -> Lattice {
     let spins: Vec<i8> = (0..l * l)
-        .map(|k| if (k / l + k % l).is_multiple_of(2) { 1 } else { -1 })
+        .map(|k| {
+            if (k / l + k % l).is_multiple_of(2) {
+                1
+            } else {
+                -1
+            }
+        })
         .collect();
     Lattice::from_spins(l, spins).unwrap()
 }
@@ -257,5 +263,100 @@ fn the_same_seed_reproduces_the_cluster_size_sequence() {
     assert_ne!(
         first, other,
         "seed 1042 produced the same cluster sizes as 42"
+    );
+}
+
+/// The exact Boltzmann distribution over the `2^(l*l)` configurations.
+fn exact_distribution(l: usize, temperature: f64) -> Vec<(f64, Vec<i8>)> {
+    let sites = l * l;
+    let mut configurations: Vec<(f64, Vec<i8>)> = (0..1u32 << sites)
+        .map(|bits| {
+            let spins: Vec<i8> = (0..sites)
+                .map(|index| if bits >> index & 1 == 1 { 1 } else { -1 })
+                .collect();
+            let energy = Lattice::from_spins(l, spins.clone()).unwrap().energy() as f64;
+            ((-energy / temperature).exp(), spins)
+        })
+        .collect();
+    let total: f64 = configurations.iter().map(|(weight, _)| weight).sum();
+    for (weight, _) in configurations.iter_mut() {
+        *weight /= total;
+    }
+    configurations
+}
+
+fn configuration_index(spins: &[i8]) -> usize {
+    spins
+        .iter()
+        .enumerate()
+        .filter(|(_, spin)| **spin > 0)
+        .map(|(index, _)| 1usize << index)
+        .sum()
+}
+
+#[test]
+fn the_wolff_chain_reproduces_the_exact_boltzmann_distribution() {
+    // The point of Equation 16 is that flipping the whole cluster with
+    // acceptance one leaves the Boltzmann distribution invariant. On a 3 x 3
+    // torus all 512 configurations can be written down, so the chain can be
+    // checked against the exact distribution and not only against rules about
+    // which sites a single move touches. A wrong bond probability, or a flip
+    // that is not applied to the whole cluster, changes this distribution.
+    let l = 3;
+    let temperature = 2.3;
+    let sites = l * l;
+    let exact = exact_distribution(l, temperature);
+    let exact_energy: f64 = exact
+        .iter()
+        .map(|(weight, spins)| {
+            weight * Lattice::from_spins(l, spins.clone()).unwrap().energy() as f64
+        })
+        .sum();
+    let exact_abs_m: f64 = exact
+        .iter()
+        .map(|(weight, spins)| {
+            weight * spins.iter().map(|spin| *spin as f64).sum::<f64>().abs() / sites as f64
+        })
+        .sum();
+
+    let burn_in = 20_000u64;
+    let measured = 200_000u64;
+    let mut rng = ChaCha8Rng::seed_from_u64(2026);
+    let mut lattice = Lattice::all_up(l);
+    let mut counts = vec![0f64; 1usize << sites];
+    let mut sum_energy = 0.0;
+    let mut sum_abs_m = 0.0;
+    for step in 0..burn_in + measured {
+        cluster_flip(&mut lattice, temperature, &mut rng);
+        if step < burn_in {
+            continue;
+        }
+        counts[configuration_index(lattice.spins())] += 1.0;
+        sum_energy += lattice.energy() as f64;
+        sum_abs_m += lattice.abs_magnetization();
+    }
+    let samples = measured as f64;
+    let mean_energy = sum_energy / samples;
+    let mean_abs_m = sum_abs_m / samples;
+    // Total variation between the sampled and the exact configuration law.
+    // With 200000 draws over 512 configurations an exact sampler sits near
+    // sqrt(512 / (2 pi n)) = 0.015, so 0.1 is a loose but decisive bound.
+    let variation: f64 = counts
+        .iter()
+        .enumerate()
+        .map(|(index, count)| ((count / samples) - exact[index].0).abs())
+        .sum::<f64>()
+        / 2.0;
+    assert!(
+        variation < 0.1,
+        "total variation {variation} against the exact distribution"
+    );
+    assert!(
+        (mean_energy - exact_energy).abs() < 0.2,
+        "mean energy {mean_energy} against exact {exact_energy}"
+    );
+    assert!(
+        (mean_abs_m - exact_abs_m).abs() < 0.02,
+        "mean |m| {mean_abs_m} against exact {exact_abs_m}"
     );
 }
