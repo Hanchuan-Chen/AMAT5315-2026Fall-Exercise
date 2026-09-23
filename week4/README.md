@@ -148,8 +148,11 @@ It writes `artifacts/taylor-green/`, `artifacts/random/` (`n = 128`,
 `nu = 0.004`, `t_end = 10`), the three `artifacts/order/rk4-dt*/` runs
 (`taylor-green`, `n = 8`, `nu = 0.5`, `t_end = 2`, `dt = 0.4, 0.25, 0.2`) and
 `artifacts/unstable/taylor-green/` (`rk4`, `n = 64`, `nu = 0.1`, `dt = 0.04`),
-and nothing else: the tracked `evidence/` figures are redrawn by the scripts
-below, so a different `SEED` cannot dirty a committed figure.
+and nothing else, so a different `SEED` cannot dirty a committed figure.
+`make reproduce` covers the gate artifacts only: the manual runs below — the
+exact field at `t = 1`, the scan, and the convergence series — are still
+required to redraw `evidence/taylor-green.png`, `evidence/blowup.png` and
+`evidence/convergence.*`.
 
 The Taylor-Green case of check (2), and the random flow of Part 3, each from the
 generator into the solver:
@@ -186,17 +189,20 @@ The random field's spectrum is flat inside the band and scaled to `E(0) = 0.5`,
 as the design file fixes it, so its enstrophy is
 `Z(0) = N / (2 sum 1/|k|^2) = 104 / 15.675198 = 6.6347` and the committed run
 then falls to `Z(10) = 1.0482`, a factor of 6.33 where the sheet's Expected
-output prints `6.6567`, a factor of seven. The two cannot both hold: for any
-equal-amplitude integer ring `Z/E = N / sum(1/|k|^2) = 104 / 7.837599 = 13.2694`
+output prints `Z(0) = 6.6567` and `Z(10) = 0.9337`, whence its factor of seven.
+The two cannot both hold: for any equal-amplitude spectrum on the design band
+`Z/E = N / sum(1/|k|^2) = 104 / 7.837599 = 13.2694`
 forces `Z(0) = 6.6347` at `E(0) = 0.5`, while the key's `6.6567` implies
 `Z/E = 13.3134`, a non-flat spectrum of the kind its own published data shows
 (`week4/data/transfer.json`, per-shell amplitudes 0.3587, 0.2677, 0.2825,
 0.3294, 0.1682 for `|k| = 2..6`) and whose generator is not published. This
 follows the design file, the sheet's diagnostic ("an initial enstrophy far from
 6.66 means the band or the amplitude is wrong") is not triggered at 0.33%, the
-seed-to-seed spread of this generator (seeds 3, 11, 99, 2027: `E(10)` in
-`[0.278, 0.292]`, `Z(10)` in `[0.921, 1.140]`) brackets the key's
-`0.2939 / 0.9337`, and the published gate does not read these values. The
+seed-to-seed spread of this generator (seeds 3, 11, 99, 2027, beside the
+committed seed 2026 at `0.2776 / 1.0482`) gives `E(10)` in `[0.2830, 0.2918]`
+and `Z(10)` in `[0.9206, 1.1397]`, so the enstrophy range brackets the key's
+`0.9337` while the energy sits just below its `0.2939`, and the published gate
+does not read these values. The
 `random.png` colour scale is the sheet's rule applied to this field,
 `+/- max |omega(0)| = +/- 11.08`, where the key's own field gives `+/- 10.97`.
 
@@ -333,6 +339,8 @@ Every file in `week4/evidence/`, beside the command that produces it.
 The tracked files at the `week4/` root (`git ls-files week4`):
 
 ```text
+.gitignore                    the paths this README's runs keep out of git
+Makefile                      `make reproduce`: the gate's artifact entry point
 Cargo.toml, Cargo.lock        the Rust crate and its locked dependency graph
 field.design.toml             the contract of `field`, block-identical to the sheet
 fluid.design.toml             the contract of `fluid`, block-identical to the sheet
@@ -348,9 +356,13 @@ The published `week4-resources.zip` also carries `week4/checker/check`, a
 stdlib-only gate over the raw artifacts. It reads
 `artifacts/{taylor-green,random}/`, the three `artifacts/order/` runs and
 `artifacts/unstable/taylor-green/`, so `make reproduce` has to run first; the
-gate can also pin the seed, which the same run must honour:
+gate can also pin the seed, which the same run must honour. This snippet
+downloads the archive itself, so it does not depend on the design-file section
+above having run:
 
 ```bash
+curl -fsSL -o /tmp/week4-resources.zip \
+  https://giggleliu.github.io/AMAT5315-2026Fall/downloads/week4-resources.zip
 unzip -p /tmp/week4-resources.zip week4/checker/check > /tmp/w4check.py
 make reproduce && python3 /tmp/w4check.py .
 SEED=7 make reproduce && SEED=7 python3 /tmp/w4check.py .
