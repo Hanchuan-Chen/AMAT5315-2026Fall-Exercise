@@ -17,6 +17,7 @@ command from `week4/`.
 ```text
 week4/
   Cargo.toml, Cargo.lock        Rust crate `week4`, binaries `field` and `fluid`
+  Makefile                      `make reproduce`: the artifacts the gate reads
   field.design.toml             the contract of `field`
   fluid.design.toml             the contract of `fluid`
   README.md                     this document
@@ -133,6 +134,23 @@ second-order law; the Fourier column is at roundoff.
 
 ## The two pipelines
 
+`make reproduce` is the gate's entry point. The published checker reads the raw
+artifacts of a checkout, which the sheet keeps untracked, so a fresh clone has
+none until this runs; it installs the crate and writes exactly the runs the gate
+reads, honouring `SEED` as `${SEED:-2026}` for the random field:
+
+```bash
+make reproduce          # SEED defaults to 2026
+SEED=7 make reproduce   # the same runs on another random field
+```
+
+It writes `artifacts/taylor-green/`, `artifacts/random/` (`n = 128`,
+`nu = 0.004`, `t_end = 10`), the three `artifacts/order/rk4-dt*/` runs
+(`taylor-green`, `n = 8`, `nu = 0.5`, `t_end = 2`, `dt = 0.4, 0.25, 0.2`) and
+`artifacts/unstable/taylor-green/` (`rk4`, `n = 64`, `nu = 0.1`, `dt = 0.04`),
+and nothing else: the tracked `evidence/` figures are redrawn by the scripts
+below, so a different `SEED` cannot dirty a committed figure.
+
 The Taylor-Green case of check (2), and the random flow of Part 3, each from the
 generator into the solver:
 
@@ -165,12 +183,22 @@ one colour scale, each frame labelled with the energy and enstrophy recomputed
 from its own fields.
 
 The random field's spectrum is flat inside the band and scaled to `E(0) = 0.5`,
-as the design file fixes it, so its enstrophy is `6.6347`; the answer key's own
-generator draws a slightly different spectrum and prints `6.6567`, and its
-`t = 10` values `0.2939 / 0.9337` sit inside the seed-to-seed spread of this
-generator (seeds 3, 11, 99, 2027 give `E(10)` in `[0.278, 0.292]` and `Z(10)` in
-`[0.921, 1.140]`). The sheet's claim holds for every draw: enstrophy falls about
-sevenfold while the energy falls by less than half.
+as the design file fixes it, so its enstrophy is
+`Z(0) = N / (2 sum 1/|k|^2) = 104 / 15.675198 = 6.6347` and the committed run
+then falls to `Z(10) = 1.0482`, a factor of 6.33 where the sheet's Expected
+output prints `6.6567`, a factor of seven. The two cannot both hold: for any
+equal-amplitude integer ring `Z/E = N / sum(1/|k|^2) = 104 / 7.837599 = 13.2694`
+forces `Z(0) = 6.6347` at `E(0) = 0.5`, while the key's `6.6567` implies
+`Z/E = 13.3134`, a non-flat spectrum of the kind its own published data shows
+(`week4/data/transfer.json`, per-shell amplitudes 0.3587, 0.2677, 0.2825,
+0.3294, 0.1682 for `|k| = 2..6`) and whose generator is not published. This
+follows the design file, the sheet's diagnostic ("an initial enstrophy far from
+6.66 means the band or the amplitude is wrong") is not triggered at 0.33%, the
+seed-to-seed spread of this generator (seeds 3, 11, 99, 2027: `E(10)` in
+`[0.278, 0.292]`, `Z(10)` in `[0.921, 1.140]`) brackets the key's
+`0.2939 / 0.9337`, and the published gate does not read these values. The
+`random.png` colour scale is the sheet's rule applied to this field,
+`+/- max |omega(0)| = +/- 11.08`, where the key's own field gives `+/- 10.97`.
 
 ## Part 3: find the stability limit
 
@@ -195,7 +223,7 @@ then prints a non-finite line. The sheet then asks for the random flow at `0.038
 and `0.040`, and for smaller steps if both blow up:
 
 ```bash
-for dt in 0.038 0.040 0.034 0.030; do field random --n 128 --seed 2026 \
+for dt in 0.038 0.040 0.034 0.03125; do field random --n 128 --seed 2026 \
   --k-min 2 --k-max 6 | fluid --method rk4 --nu 0.004 --dt $dt --t-end 10 \
   --every 0.5 --out artifacts/scan/random-rk4-$dt > artifacts/scan/random-rk4-$dt.tsv
 done
@@ -205,8 +233,9 @@ field random --n 128 --seed 2026 --k-min 2 --k-max 6 \
 ```
 
 Both required steps blew up (`0.038` and `0.040` stop at `t = 0.8`), so the
-bracketing pair moved down: `0.034` stops at `t = 1.1` and `0.030` reaches
-`t = 10`. That is `1.5x` to `1.7x` the Equation 17 bound
+bracketing pair moved down: `0.034` stops at `t = 1.1` and `0.03125` reaches
+`t = 10` with a stored frame there, since it is `0.5/16`: 320 steps land exactly
+on `t = 10` and every 16th step on a snapshot. That is `1.6x` to `1.7x` the Equation 17 bound
 `2.83 / (U_max |k|_max) = 2.83 / (2.4176 * 59.40) = 0.0197`, inside the sheet's
 allowed factor of one to three. Forward Euler at `0.01`, which has no imaginary
 stability interval, stops at `t = 1.1`.
@@ -264,7 +293,10 @@ against the `dt = 0.0025` reference), the fitted slope `4.027` (required
 `3.7 <= q <= 4.3`), the Richardson estimate `1.270e-06` at `dt = 0.01`, the
 predicted errors at the three candidate steps, and the choice: `dt = 0.0125`,
 predicted `3.100e-06` and measured `3.044e-06`, both below `5e-6`, while
-`dt = 0.02` fails. The full record is `evidence/convergence.json`.
+`dt = 0.02` fails. Those two figures differ from the sheet's `3.46e-6 / 3.40e-6`
+because every error in this series is measured against this generator's own
+`dt = 0.0025` reference field, not the answer key's. The full record is
+`evidence/convergence.json`.
 
 ## Script order
 
@@ -315,11 +347,13 @@ evidence/                     the inventory table above
 The published `week4-resources.zip` also carries `week4/checker/check`, a
 stdlib-only gate over the raw artifacts. It reads
 `artifacts/{taylor-green,random}/`, the three `artifacts/order/` runs and
-`artifacts/unstable/taylor-green/`, so the runs above have to exist first:
+`artifacts/unstable/taylor-green/`, so `make reproduce` has to run first; the
+gate can also pin the seed, which the same run must honour:
 
 ```bash
 unzip -p /tmp/week4-resources.zip week4/checker/check > /tmp/w4check.py
-python3 /tmp/w4check.py .
+make reproduce && python3 /tmp/w4check.py .
+SEED=7 make reproduce && SEED=7 python3 /tmp/w4check.py .
 ```
 
 It prints its own measurements and `PASS`; measured here, `taylor-green-field
@@ -340,7 +374,8 @@ git ls-files week4 | grep -E 'artifacts|target|\.venv' || echo "no generated pat
 
 From a clean clone, in order: install; the design-file comparison; the two
 pipelines; the unstable run and the scan; the three order runs and the four
-convergence runs; then the eight scripts in the table above. At that point every
+convergence runs; then the eight scripts in the table above. `make reproduce`
+covers the install and every run the gate reads in one step. At that point every
 tracked file under `week4/` exists, `git status` shows only the git-ignored
 generated folders, and the numbers quoted in this README can be checked line by
 line against the printed output of the scripts.
