@@ -97,18 +97,18 @@ def stability_figure(data: dict) -> plt.Figure:
         modes45[:, 0],
         modes45[:, 1],
         "o",
-        mfc="none",
-        mec="white",
-        ms=3.0,
+        mfc="white",
+        mec="black",
+        ms=3.4,
         label=r"modes, $\Delta t = 0.045$",
     )
     ax.plot(
         modes56[:, 0],
         modes56[:, 1],
         "s",
-        mfc="none",
+        mfc="black",
         mec="white",
-        ms=2.6,
+        ms=3.0,
         label=r"modes, $\Delta t = 0.056$",
     )
     ax.plot([], [], "k-", label=r"RK4, $|R|=1$")

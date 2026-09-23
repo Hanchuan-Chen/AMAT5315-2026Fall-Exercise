@@ -81,7 +81,7 @@ def main() -> None:
         ("RK4, $\\Delta t = 0.033$", scan / "tg-rk4-0.033.tsv", "C3", "-"),
     ]
     random = [
-        ("RK4, $\\Delta t = 0.030$", scan / "random-rk4-0.030.tsv", "C0", "-"),
+        ("RK4, $\\Delta t = 0.03125$", scan / "random-rk4-0.03125.tsv", "C0", "-"),
         ("RK4, $\\Delta t = 0.034$", scan / "random-rk4-0.034.tsv", "C3", "-"),
         ("Euler, $\\Delta t = 0.010$", scan / "random-euler-0.010.tsv", "C2", ":"),
     ]
@@ -104,6 +104,8 @@ def main() -> None:
     ):
         for label, path, color, style in series:
             times, energies, stopped = read_tsv(path)
+            if stopped is None:
+                print(f"{name}: {label} stored frames to t = {times[-1]:g}")
             axis.semilogy(times, energies, style, color=color, label=label, lw=1.4)
             if stopped is not None:
                 axis.axvline(stopped, color=color, ls=":", lw=0.8)
