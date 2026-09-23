@@ -20,7 +20,8 @@ week4/
   field.design.toml             the contract of `field`
   fluid.design.toml             the contract of `fluid`
   README.md                     this document
-  src/                          integrators, the line, the solver, two command lines
+  src/                          integrator.rs, line.rs, solver.rs, lib.rs, and the
+                                two command lines bin/field.rs and bin/fluid.rs
   scripts/                      the line, comparison, order, refinement and plot scripts
   evidence/                     the nine committed figures and the convergence json
   artifacts/                    raw runs the figures are drawn from (generated)
@@ -82,7 +83,7 @@ two tools communicate through one JSON object: `field` writes a velocity field
 to stdout, `fluid` reads it, copies its metadata into `run.json`, and writes
 `fields.jsonl` frames with six decimals.
 
-## Part 1: the line, already exercised by the two commands below
+## Part 1: integrators on a line
 
 `src/line.rs` holds the periodic line of Equation 6 with Fourier multipliers and
 with centred differences, and `src/integrator.rs` holds forward Euler, the
