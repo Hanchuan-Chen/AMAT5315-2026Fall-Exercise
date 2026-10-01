@@ -1,0 +1,9 @@
+# Generated and downloaded paths this week's README rebuilds.
+/seismic/target/
+/.venv/
+/inputs/
+*.npy
+__pycache__/
+.pytest_cache/
+.DS_Store
+**/.DS_Store
