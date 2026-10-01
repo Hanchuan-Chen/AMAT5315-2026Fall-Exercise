@@ -15,11 +15,10 @@ command from `week5/`.
 
 ```text
 week5/
-  rust-toolchain.toml           pins nightly-2026-09-05 with the enzyme component
+  rust-toolchain.toml           the exercise-root pin: nightly-2026-09-05 with enzyme
   seismic/                      Rust crate `seismic`
     Cargo.toml, Cargo.lock      the crate and its locked dependency graph
     build.rs                    compiles src/kernel.rs with -Zautodiff=Enable
-    rust-toolchain.toml         the crate-root pin the enzyme-setup skill asks for
     src/kernel.rs               isolated no_std Enzyme kernel (input to build.rs only)
     src/deriv.rs                safe C-ABI wrappers, one derivative call per timestep
     src/experiment.rs           experiment parser
@@ -65,6 +64,10 @@ cargo install --path seismic --quiet          # leaves `seismic` on PATH
 uv venv .venv && uv pip install --python .venv/bin/python numpy matplotlib jax pytest
 .venv/bin/python -c "import numpy, matplotlib, jax; print(numpy.__version__, matplotlib.__version__, jax.__version__)"
 ```
+
+The toolchain pin lives at the exercise root, `week5/rust-toolchain.toml`, so the
+sheet's `cargo install --path seismic` — and `make reproduce` / `make test`, which
+run from `week5/` — resolve the Enzyme nightly from the working directory.
 
 Verified with numpy 2.5.3, matplotlib 3.11.2 and jax 0.11.2. Every Python
 command below is run as `.venv/bin/python ...`.
@@ -217,8 +220,9 @@ seismic --experiment inputs/reflector.json --mode adjoint \
 The Born data have L2 norm `0.18667590`, a relative error of `2.0e-08` against
 the reference. The transpose identity with `w = Jm` gives
 `<Jm, Jm> = 0.03484789021516389` and `<m, J^T Jm> = 0.034847890215163865`, a
-relative difference of `8.0e-16` (required below `1e-9`). The full history keeps
-`N + 1 = 241` complete states, `6,481,936` bytes.
+relative difference of `8.0e-16` (required below `1e-9`); `scripts/adjoint_figures.py`
+prints both sides and that difference. The full history keeps `N + 1 = 241`
+complete states, `6,481,936` bytes.
 
 `scripts/adjoint_figures.py` draws `artifacts/adjoint/image.png`: the known
 reflector, the raw signed image with its positive band and two negative side

@@ -20,6 +20,7 @@ def audit(directory, steps, delta):
     invalid_restores = 0
     budget_overruns = 0
     mismatch = 0
+    grad_unsaved = 0
     shots = 0
     expected = list(range(steps - 1, -1, -1))
     for name in sorted(directory.glob("actions-*.json")):
@@ -38,17 +39,18 @@ def audit(directory, steps, delta):
                 working = step + 1
                 calls += 1
             elif action == "store":
+                assert working == step and step not in available, f"{name}: invalid save"
                 available.add(step)
                 if len(available) > delta + 1:
                     budget_overruns += 1
                 peak = max(peak, len(available))
             elif action == "grad":
+                if step not in available:
+                    grad_unsaved += 1
                 reverse.append(step)
             elif action == "fetch":
-                if step in available and step != 0:
-                    available.remove(step)
-                else:
-                    invalid_restores += 1
+                assert step in available and step != 0, f"{name}: invalid checkpoint discard"
+                available.remove(step)
             else:
                 raise ValueError(f"unknown action {action}")
             assert event["saved_states"] == len(available), f"{name}: saved_states counter"
@@ -58,7 +60,7 @@ def audit(directory, steps, delta):
     return dict(
         calls=calls,
         peak=peak,
-        grad_mismatch=mismatch,
+        grad_mismatch=mismatch + grad_unsaved,
         invalid_restores=invalid_restores,
         budget_overruns=budget_overruns,
     )

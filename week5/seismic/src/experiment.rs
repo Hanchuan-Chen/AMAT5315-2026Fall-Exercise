@@ -21,7 +21,6 @@ pub struct Experiment {
     pub perturbation: Vec<f64>,
     pub shots: Vec<[f64; 2]>,
     pub receivers: Vec<[i64; 2]>,
-    pub initial_state: Option<[Vec<f64>; 2]>,
     pub length_unit_m: f64,
     pub time_unit_s: f64,
 }
@@ -83,17 +82,6 @@ impl Experiment {
                 [r[0].as_f64().unwrap() as i64, r[1].as_f64().unwrap() as i64]
             })
             .collect();
-        let initial_state = value.get("initial_state").map(|s| {
-            let s = s.as_array().expect("initial_state must be two flattened fields");
-            let flatten = |v: &Value| -> Vec<f64> {
-                v.as_array()
-                    .expect("initial_state field must be an array")
-                    .iter()
-                    .map(|cell| cell.as_f64().unwrap())
-                    .collect()
-            };
-            [flatten(&s[0]), flatten(&s[1])]
-        });
         Experiment {
             path: path.to_string_lossy().into_owned(),
             name: value
@@ -115,7 +103,6 @@ impl Experiment {
             perturbation: grid(&value, "perturbation", nx, nz),
             shots,
             receivers,
-            initial_state,
             length_unit_m: number(&value, "length_unit_m"),
             time_unit_s: number(&value, "time_unit_s"),
             raw,

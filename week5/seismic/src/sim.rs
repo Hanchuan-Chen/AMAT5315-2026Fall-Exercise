@@ -169,19 +169,6 @@ impl Model {
         2 * self.n() * 8
     }
 
-    pub fn initial_state(&self) -> State {
-        match &self.exp.initial_state {
-            Some([prev, u]) => {
-                assert_eq!(prev.len(), self.n());
-                State {
-                    prev: prev.clone(),
-                    u: u.clone(),
-                }
-            }
-            None => State::zeros(self.n()),
-        }
-    }
-
     fn factor(&self, step: usize) -> f64 {
         self.exp.source_amplitude * self.exp.ricker(step)
     }
@@ -216,7 +203,7 @@ impl Model {
         let steps = self.exp.steps;
         let n = self.n();
         let nrec = self.receiver_idx.len();
-        let mut state = self.initial_state();
+        let mut state = State::zeros(n);
         let mut dstate = State::zeros(n);
         let mut out = State::zeros(n);
         let mut dout = vec![0.0; n];
@@ -448,7 +435,7 @@ impl Model {
                 dc: vec![0.0; self.n()],
                 out: vec![0.0; self.n()],
             };
-            let actions = treeverse::schedule(steps, delta, self.initial_state(), &mut replay);
+            let actions = treeverse::schedule(steps, delta, State::zeros(self.n()), &mut replay);
             norms.push(l2(&replay.image));
             for (i, value) in replay.image.iter().enumerate() {
                 image[i] += value;

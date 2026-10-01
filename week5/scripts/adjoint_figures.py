@@ -21,7 +21,20 @@ def main():
     image = np.load(FOLDER / "image.npy")
     perturbation = np.asarray(EXPERIMENT["perturbation"])
     spacing = cfg["dx"] * cfg["length_unit_m"] / 1000.0
-    x0, x1, z0, z1 = 7, 34, 10, 24
+
+    born = np.load(WEEK / "artifacts" / "born" / "born_data.npy")
+    left = float(np.sum(born * born))
+    right = float(np.sum(perturbation * image))
+    relative = abs(left - right) / max(abs(left), abs(right))
+    print(
+        f"transpose identity: left = sum(Born^2) = {left:.16f}, "
+        f"right = sum(perturbation * image) = {right:.16f}, "
+        f"relative difference = {relative:.3e}"
+    )
+    assert relative < 1e-9
+
+    # The sheet's window: grid x = 7..33 and z = 10..33 inclusive.
+    x0, x1, z0, z1 = 7, 34, 10, 34
     window = image[z0:z1, x0:x1]
     profile = np.linalg.norm(window, axis=1)
     peak_row = z0 + int(np.argmax(profile))
