@@ -1,0 +1,22 @@
+[package]
+name = "seismic"
+version = "0.1.0"
+edition = "2024"
+description = "Damped acoustic wave simulation with Enzyme timestep tangents and adjoints"
+
+[[bin]]
+name = "seismic"
+path = "src/bin/seismic.rs"
+test = false
+
+[lib]
+name = "seismic"
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
