@@ -50,10 +50,10 @@ or committed evidence. `inputs/`, `artifacts/` and `.venv/` are ignored by
 | `curl` | /usr/bin/curl (macOS) | Part 1's dataset downloads |
 
 Network access is needed once, for the two dataset downloads. Everything runs
-on CPU. The environment is deliberately unpinned, with no lock file: weeks 3
-and 4 install with the same `uv pip install` line, so this week follows the
-repository's majority convention, and the versions actually verified here are
-the ones recorded below.
+on CPU. The environment is deliberately unpinned, with no lock file: weeks 3,
+4 and 5 all install unpinned with `uv pip install`, and week 5 uses this exact
+line, so this week follows the repository's majority convention. The versions
+actually verified here are the ones recorded below.
 
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python numpy matplotlib jax pytest
