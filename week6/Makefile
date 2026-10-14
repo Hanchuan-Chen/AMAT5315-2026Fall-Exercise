@@ -25,6 +25,10 @@ reproduce: data
 	$(PY) scripts/hopfield_scan.py
 	$(PY) scripts/hopfield_unstable.py
 	$(PY) scripts/hopfield_recall.py
+	$(PY) scripts/modern_scan.py
+	$(PY) scripts/modern_weights.py
+	$(PY) scripts/modern_beta.py
+	$(PY) scripts/modern_retrieval.py
 
 test:
 	$(PY) -m pytest tests

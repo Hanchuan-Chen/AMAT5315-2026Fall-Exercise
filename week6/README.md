@@ -188,3 +188,49 @@ mean-overlap crossing below 0.9      reference   measured
 
 Every crossing is within the sheet's 0.02 and they decrease with N; the
 unstable-bit fraction approaches the ``Phi(-1/sqrt(alpha))`` curve as N grows.
+
+## Part 4: the modern Hopfield network and attention
+
+`scripts/modern_lib.py` stores the first ``P`` MNIST training images in stored
+order as binarized spin columns of ``X``, implements the update of Eq. 17,
+``x <- X softmax(beta X^T x)``, computes the same update with JAX's
+``jax.nn.dot_product_attention`` (``x`` as the query, the stored patterns as
+keys and values, ``scale=beta``), and scores retrieval as an overlap of at
+least 0.95 with the target *and* the target being the nearest stored digit to
+the signed result. The classical comparison is Part 3's recall on the same
+patterns.
+
+```bash
+.venv/bin/python scripts/modern_scan.py        # -> artifacts/modern/scan.npz, run.json
+.venv/bin/python scripts/modern_weights.py     # -> evidence/modern-weights.png
+.venv/bin/python scripts/modern_beta.py        # -> evidence/modern-beta.png
+.venv/bin/python scripts/modern_retrieval.py   # -> evidence/modern-retrieval.png
+```
+
+The 100 queries cycle through the stored digits, each with its lower half
+replaced by random spins drawn from `jax.random.key(6608)`; the classical
+recall order uses `jax.random.key(6609)`. Both seeds and the whole run's
+wall-clock time (3.1 s) are recorded in `artifacts/modern/run.json`.
+
+Measured:
+
+```text
+largest |modern update - softmax attention| over all queries, P, beta
+  measured 1.19e-06    required below 1e-5    reference 6.0e-7
+  (the library default scale 1/sqrt(784) would give about 2)
+queried digit's softmax weight, 100 stored digits      reference   measured
+  beta = 0.003                                          0.01        0.0143
+  beta = 0.03                                           0.25        0.2309
+  beta = 0.3                                            1.00        1.0000
+modern retrieval success at beta = 0.3                  reference   measured
+  P = 3, 10, 30, 100, 300, 1000                          0.98-1.00   1.00 1.00 0.99 1.00 0.99 0.97
+modern retrieval success at beta = 0.1 at P = 1000      0.91        0.88
+classical recall success at every P                     0           0
+```
+
+Every modern success at ``beta = 0.3`` is at least 0.90, the classical recall
+never succeeds, and the weights move from a uniform blend (0.01 = 1/100) to
+one-hot retrieval as ``beta`` grows. The figure `modern-beta.png` shows the
+same behaviour in images: at ``beta <= 0.01`` every query returns one blurred
+average digit, at 0.03 the queried digit emerges from it, and at ``beta >= 0.1``
+one update returns the stored digit.
