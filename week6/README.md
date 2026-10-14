@@ -143,3 +143,48 @@ The four evidence figures:
 * `rbm-completion.png`: held-out digits with only the upper half observed, 8
   chains each, true and wrong clamps, both models, with the ink overlap against
   steps underneath.
+
+## Part 3: the classical Hopfield network
+
+`scripts/hopfield_lib.py` holds the Hebbian couplings of Eq. 12 with a zero
+diagonal, the overlap, the unstable-bit fraction ``xi_i h_i < 0`` over all
+stored patterns, and zero-temperature asynchronous recall ``s_i <- sign(h_i)``
+in a fresh random order each sweep, leaving ``s_i`` unchanged when ``h_i = 0``
+and stopping when a whole sweep flips nothing. The fields come from
+``X (X^T s) / N`` rather than a materialized ``J``, so a sweep costs ``O(N P)``
+per chain; `tests/test_hopfield.py` checks the vectorized recall against a
+naive spin-by-spin loop and the unstable fraction against an explicit ``J``.
+
+The sweep is ``alpha = P/N`` from 0.05 to 0.25 in steps of 0.01 for N = 100,
+200, 400, 800, with 20 independent pattern sets per point:
+
+```bash
+.venv/bin/python scripts/hopfield_scan.py       # -> artifacts/hopfield/scan.npz, run.json
+.venv/bin/python scripts/hopfield_unstable.py   # -> evidence/hopfield-unstable.png
+.venv/bin/python scripts/hopfield_recall.py     # -> evidence/hopfield-recall.png
+```
+
+The pattern sets have fixed seeds, `numpy.random.default_rng([2026, N,
+alpha_index, set_index])`, and the recall order uses
+`jax.random.key(2026 * 10000 + N * 10 + alpha_index)`; both are recorded in
+`artifacts/hopfield/run.json` beside the wall-clock time, which was 40.1 s for
+the whole sweep (N = 100: 3.7 s, 200: 4.1 s, 400: 7.1 s, 800: 25.1 s), against
+the sheet's reference of about 7 minutes for the same study.
+
+Measured:
+
+```text
+unstable-bit fraction, alpha = 0.20   reference   measured
+  N = 800                             1.25e-2     1.245e-2   (large-N 1.267e-2)
+unstable-bit fraction, alpha = 0.10   reference   measured
+  N = 100                             3.50e-4     2.500e-4   (large-N 7.827e-4,
+                                                finite-N 4.556e-4)
+mean-overlap crossing below 0.9      reference   measured
+  N = 100                             0.186       0.1938
+  N = 200                             0.170       0.1655
+  N = 400                             0.156       0.1548
+  N = 800                             0.150       0.1487
+```
+
+Every crossing is within the sheet's 0.02 and they decrease with N; the
+unstable-bit fraction approaches the ``Phi(-1/sqrt(alpha))`` curve as N grows.

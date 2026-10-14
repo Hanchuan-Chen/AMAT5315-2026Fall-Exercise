@@ -22,6 +22,9 @@ reproduce: data
 	$(PY) scripts/rbm_training.py
 	$(PY) scripts/rbm_generation.py
 	$(PY) scripts/rbm_completion.py
+	$(PY) scripts/hopfield_scan.py
+	$(PY) scripts/hopfield_unstable.py
+	$(PY) scripts/hopfield_recall.py
 
 test:
 	$(PY) -m pytest tests
