@@ -32,7 +32,7 @@ def overlaps(patterns: np.ndarray, states: np.ndarray) -> np.ndarray:
     """``m = (1/N) sum_i xi_i s_i`` for each pattern-state pair."""
     patterns = np.asarray(patterns, dtype=np.float32)
     states = np.asarray(states, dtype=np.float32)
-    return states @ patterns.T / patterns.shape[0]
+    return states @ patterns / patterns.shape[0]
 
 
 def unstable_fraction(patterns: np.ndarray) -> tuple[float, np.ndarray]:

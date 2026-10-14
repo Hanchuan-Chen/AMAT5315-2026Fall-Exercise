@@ -36,9 +36,8 @@ def stored_patterns(p: int) -> np.ndarray:
 
 def corrupted_queries(x: np.ndarray, targets: np.ndarray, key) -> np.ndarray:
     """Cycle through the stored digits, replacing each lower half by random spins."""
-    n_patterns = x.shape[1]
     upper = x[:HALF, targets]
-    lower = 2.0 * jax.random.bernoulli(key, 0.5, (HALF, QUERIES)) - 1.0
+    lower = 2.0 * jax.random.bernoulli(key, 0.5, (HALF, targets.size)) - 1.0
     return jnp.concatenate([upper, lower], axis=0)
 
 
