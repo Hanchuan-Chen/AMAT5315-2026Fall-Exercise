@@ -357,7 +357,7 @@ pytest suite, which needs `make data` to have run because the dataset tests read
 ```bash
 make venv
 make reproduce      # downloads, all runs and all eleven figures
-make test           # 25 tests
+make test           # 26 tests
 ```
 
 Wall-clock for the whole of `make reproduce` on this machine: 2 min 18 s,
@@ -470,6 +470,11 @@ table above; `make test`. At that point every tracked file under `week6/`
 exists, `git status` shows only the ignored `inputs/`, `artifacts/` and
 `.venv/`, and every number quoted in this README can be read line by line from
 the printed output of the scripts.
+
+This was verified by cloning the repository to a fresh directory and running
+`make venv && make reproduce && make test` there: the tree stayed clean, all
+eleven figures came out byte-identical to the committed ones, and all 26 tests
+passed.
 
 ## Resolutions of ambiguity
 

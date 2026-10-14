@@ -31,7 +31,7 @@ def main(name: str) -> None:
         title = "CIFAR-10: first 8 training images per class (32x32 RGB, 0-255)"
 
     fig, freq_rect = datasets.gallery_figure(
-        x_train, y_train, class_names, per_class, title, cmap=cmap
+        x_train, class_names, per_class, title, labels=y_train, cmap=cmap
     )
     datasets.frequency_axes(
         fig,

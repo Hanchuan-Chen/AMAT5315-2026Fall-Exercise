@@ -43,7 +43,7 @@ def test_cifar10_is_exactly_balanced():
 def test_gallery_and_frequency_figure_builds(tmp_path):
     x_train, y_train, _, _ = datasets.read_mnist()
     fig, rect = datasets.gallery_figure(
-        x_train, y_train, datasets.DIGIT_NAMES, 3, "test", cmap="gray"
+        x_train, datasets.DIGIT_NAMES, 3, "test", labels=y_train, cmap="gray"
     )
     datasets.frequency_axes(
         fig,
@@ -53,5 +53,15 @@ def test_gallery_and_frequency_figure_builds(tmp_path):
         datasets.DIGIT_NAMES,
     )
     out = tmp_path / "gallery.png"
+    fig.savefig(out, dpi=40)
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_gallery_without_labels(tmp_path):
+    x_train, _, _, _ = datasets.read_mnist()
+    fig, _ = datasets.gallery_figure(
+        x_train, datasets.DIGIT_NAMES, 2, "no labels", cmap="gray"
+    )
+    out = tmp_path / "unlabeled.png"
     fig.savefig(out, dpi=40)
     assert out.exists() and out.stat().st_size > 0

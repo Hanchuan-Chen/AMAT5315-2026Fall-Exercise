@@ -93,20 +93,29 @@ def class_fractions(labels: np.ndarray, n_classes: int = 10) -> np.ndarray:
 
 def gallery_figure(
     images: np.ndarray,
-    labels: np.ndarray,
     class_names: list[str],
     per_class: int,
     title: str,
+    labels: np.ndarray | None = None,
     cmap: str | None = None,
 ) -> tuple[plt.Figure, list[float]]:
     """A labeled gallery: one row per class, ``per_class`` examples per row.
 
     Cells are laid out in inches and drawn with ``interpolation="none"``, so
     each image occupies a square box at its own resolution and no smoothing or
-    invented detail appears.  Returns the figure and the rectangle, in figure
-    fractions, left free underneath the gallery for the frequency panel.
+    invented detail appears.  ``class_names`` is the list of class labels used
+    for the rows; ``labels`` maps each image to its class and is optional, since
+    a caller can pass rows of images whose classes it already knows.  Returns
+    the figure and the rectangle, in figure fractions, left free underneath the
+    gallery for the frequency panel.
     """
-    n_classes = len(class_names)
+    rows = (
+        [np.flatnonzero(labels == row)[:per_class] for row in range(len(class_names))]
+        if labels is not None
+        else [np.arange(row * per_class, (row + 1) * per_class)
+              for row in range(len(class_names))]
+    )
+    n_classes = len(rows)
     label_in, tile_in, right_in, title_in = 0.85, 0.42, 0.06, 0.52
     gap_in, freq_in, bottom_in = 0.35, 1.60, 0.80
     fig_w = label_in + per_class * tile_in + right_in
@@ -118,7 +127,7 @@ def gallery_figure(
 
     gallery_top = fig_h - title_in
     for row in range(n_classes):
-        picks = np.flatnonzero(labels == row)[:per_class]
+        picks = rows[row]
         for col, index in enumerate(picks):
             ax = fig.add_axes(
                 rect(
@@ -131,7 +140,11 @@ def gallery_figure(
             ax.imshow(images[index], cmap=cmap, interpolation="none")
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title(f"{labels[index]}", fontsize=6, pad=1.5)
+            ax.set_title(
+                class_names[row] if labels is None else f"{labels[index]}",
+                fontsize=6,
+                pad=1.5,
+            )
             for spine in ax.spines.values():
                 spine.set_visible(False)
         fig.text(
