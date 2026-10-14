@@ -45,23 +45,33 @@ def test_gallery_and_frequency_figure_builds(tmp_path):
     fig, rect = datasets.gallery_figure(
         x_train, datasets.DIGIT_NAMES, 3, "test", labels=y_train, cmap="gray"
     )
-    datasets.frequency_axes(
-        fig,
-        rect,
-        datasets.class_fractions(y_train),
-        datasets.class_fractions(y_train),
-        datasets.DIGIT_NAMES,
-    )
+    tiles = fig.axes
+    assert len(tiles) == len(datasets.DIGIT_NAMES) * 3
+    # One row per class: the first tile of each row is that class's first image.
+    for digit in range(len(datasets.DIGIT_NAMES)):
+        first = np.flatnonzero(y_train == digit)[0]
+        assert np.array_equal(tiles[digit * 3].images[0].get_array(), x_train[first])
+    for tile in tiles:
+        assert tile.images[0].get_array().shape == (28, 28)
+        assert tile.images[0].get_interpolation() == "none"
+
+    fractions = datasets.class_fractions(y_train)
+    ax = datasets.frequency_axes(fig, rect, fractions, fractions, datasets.DIGIT_NAMES)
+    heights = np.array([patch.get_height() for patch in ax.patches])
+    assert heights.shape == (2 * len(datasets.DIGIT_NAMES),)
+    assert np.allclose(heights[:10], fractions)
+    assert np.allclose(heights[10:], fractions)
     out = tmp_path / "gallery.png"
     fig.savefig(out, dpi=40)
-    assert out.exists() and out.stat().st_size > 0
+    assert out.stat().st_size > 0
 
 
-def test_gallery_without_labels(tmp_path):
+def test_gallery_without_labels_takes_the_stored_order():
     x_train, _, _, _ = datasets.read_mnist()
     fig, _ = datasets.gallery_figure(
         x_train, datasets.DIGIT_NAMES, 2, "no labels", cmap="gray"
     )
-    out = tmp_path / "unlabeled.png"
-    fig.savefig(out, dpi=40)
-    assert out.exists() and out.stat().st_size > 0
+    drawn = [tile.images[0].get_array() for tile in fig.axes]
+    assert len(drawn) == 20
+    assert np.array_equal(np.asarray(drawn[0]), x_train[0])
+    assert np.array_equal(np.asarray(drawn[-1]), x_train[19])

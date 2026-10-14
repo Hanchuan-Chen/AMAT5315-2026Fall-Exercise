@@ -140,11 +140,6 @@ def gallery_figure(
             ax.imshow(images[index], cmap=cmap, interpolation="none")
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title(
-                class_names[row] if labels is None else f"{labels[index]}",
-                fontsize=6,
-                pad=1.5,
-            )
             for spine in ax.spines.values():
                 spine.set_visible(False)
         fig.text(

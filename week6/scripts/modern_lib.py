@@ -80,6 +80,5 @@ def retrieval_success(
 
 def classical_recall(x: np.ndarray, starts: jnp.ndarray, key) -> jnp.ndarray:
     """Part 3's recall on the same patterns, from the same corrupted queries."""
-    couplings = hopfield_lib.hebbian(x)
-    final, _ = hopfield_lib.recall_with_couplings(couplings, starts.T, key)
+    final, _ = hopfield_lib.recall(x, starts.T, key)
     return final.T

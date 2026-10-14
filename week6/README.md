@@ -88,16 +88,12 @@ CIFAR-10 binary records, and it draws a labeled gallery (one row per class, the
 first images of each class in stored order) and the class-frequency plot of the
 two splits. Gallery cells are sized in inches and drawn with
 `interpolation="none"`, so each image occupies a square box at its own
-resolution with no smoothing and no invented detail. `scripts/dataset_figures.py`
-is one command per dataset:
+resolution with no smoothing and no invented detail. The class of each row is
+written to its left; `scripts/dataset_figures.py` takes the dataset name, so one
+command draws each figure (see the inventory below), and each takes about a
+second.
 
-```bash
-bash scripts/download_data.sh                          # -> inputs/ (ignored)
-.venv/bin/python scripts/dataset_figures.py mnist      # -> evidence/mnist.png    (0.8 s)
-.venv/bin/python scripts/dataset_figures.py cifar10    # -> evidence/cifar10.png  (1.8 s)
-```
-
-Measured, printed by the two commands:
+Measured, printed by those commands:
 
 ```text
 mnist:   train 60000 test 10000 images, shape (28, 28), dtype uint8, pixels 0..255
@@ -129,21 +125,17 @@ hidden layer, the surrogate's gradient against the explicit
 is JAX on CPU with `float32`, the hot loops are jitted, and the visible layer is
 binarized at half intensity (`v = 1` for a pixel value at least 128).
 
-Training both models writes the raw run into `artifacts/rbm/` (parameters, a
-settings record, and the histories of the surrogate and of the held-out
-one-step reconstruction error):
-
-```bash
-.venv/bin/python scripts/rbm_train.py       # -> artifacts/rbm/{cd1,cd10}-params.npz
-                                            #    artifacts/rbm/run.json          (65.3 s)
-```
-
+`scripts/rbm_train.py` trains both models and writes the raw run into the
+ignored `artifacts/rbm/`: the parameters, a settings record, and the histories
+of the surrogate and of the held-out one-step reconstruction error. It took
+about 9 s of wall clock for CD-1 and about 55 s for CD-10 here;
+`artifacts/rbm/run.json` records the exact times of whatever run produced it.
 Measured, printed by that command and re-read by the figure script:
 
 ```text
-cd1:  20 epochs over 60000 images (the full training split), batch 100, 8.9 s
+cd1:  20 epochs over 60000 images (the full training split), batch 100
       reconstruction error 0.17084 at initialization -> 0.04616 (27.0% of it)
-cd10: the same data order and evaluation randomness, chain length 10, 56.1 s
+cd10: the same data order and evaluation randomness, chain length 10
       reconstruction error 0.17084 at initialization -> 0.04652 (27.2% of it)
 ```
 
@@ -152,14 +144,8 @@ CD-1 and CD-10 share the initialization (seed 6601), the data order (seed
 randomness (seed 6606), so they differ only in their chain length. The sheet's
 reference is about 17% -> 4.7% of pixels with 18 s and 105 s of training.
 
-The four evidence figures:
-
-```bash
-.venv/bin/python scripts/rbm_spins.py        # -> evidence/rbm-spins.png        (0.5 s)
-.venv/bin/python scripts/rbm_training.py     # -> evidence/rbm-training.png     (0.5 s)
-.venv/bin/python scripts/rbm_generation.py   # -> evidence/rbm-generation.png   (2.2 s)
-.venv/bin/python scripts/rbm_completion.py   # -> evidence/rbm-completion.png   (7.2 s)
-```
+The four evidence figures are drawn by the four `scripts/rbm_*.py` figure
+scripts listed in the inventory below.
 
 * `rbm-spins.png`: the first 16 training images binarized, one enlarged spin
   configuration (ink +1, background -1), and the 784-to-128 coupling diagram;
@@ -173,9 +159,9 @@ The four evidence figures:
   chains per model at 1, 10, 100 and 1000 steps from matched starts, plus the
   two learning curves. Both models start from the same held-out images and the
   same random spins (largest entry difference 0.0). Reconstruction keeps its
-  starting digit at every length; fresh generation starts as noise and, by 1000
-  steps, has 11 connected ink components against 65 after one step, i.e. blobs
-  and rings of stroke-like edges rather than recognizable digits.
+  starting digit at every length; fresh generation starts as noise and develops
+  connected regions of ink with stroke-like edges, blobs and rings rather than
+  recognizable digits.
 * `rbm-completion.png`: held-out digits with only the upper half observed, eight
   chains each, true and wrong clamps, both models, with the ink overlap against
   steps underneath.
@@ -205,24 +191,21 @@ fresh random order each sweep, leaving `s_i` unchanged when `h_i = 0` and
 stopping when a whole sweep flips nothing. The fields come from `X (X^T s) / N`
 rather than a materialized `J`, so a sweep costs `O(N P)` per chain;
 `tests/test_hopfield.py` checks the unstable fraction against an explicit `J`,
-the two recall implementations against each other, and a zero-field state
-against leaving every spin unchanged.
+the fixed-point and local-minimum properties of the recalled states, a
+zero-field state against leaving every spin unchanged, and the recovery of a
+corrupted pattern at low load.
 
 The sweep is `alpha = P/N` from 0.05 to 0.25 in steps of 0.01 for N = 100, 200,
-400, 800, with 20 independent pattern sets per point:
-
-```bash
-.venv/bin/python scripts/hopfield_scan.py       # -> artifacts/hopfield/scan.npz, run.json (40.1 s)
-.venv/bin/python scripts/hopfield_unstable.py   # -> evidence/hopfield-unstable.png (0.3 s)
-.venv/bin/python scripts/hopfield_recall.py     # -> evidence/hopfield-recall.png   (0.3 s)
-```
+400, 800, with 20 independent pattern sets per point. `scripts/hopfield_scan.py`
+writes the raw sweep into the ignored `artifacts/hopfield/`, and the two figure
+scripts listed in the inventory below read it.
 
 The pattern sets have fixed seeds, `numpy.random.default_rng([2026, N,
 alpha_index, set_index])`, and the recall order uses
 `jax.random.key(2026 * 10000 + N * 10 + alpha_index)`; both are recorded in
-`artifacts/hopfield/run.json` beside the wall-clock time, which was 40.1 s for
-the whole sweep (N = 100: 3.7 s, 200: 4.1 s, 400: 7.1 s, 800: 25.1 s), against
-the sheet's reference of about 7 minutes for the same study.
+`artifacts/hopfield/run.json` beside the wall-clock time, about 40 s for the
+whole sweep (roughly 4, 4, 7 and 25 s for N = 100, 200, 400, 800), against the
+sheet's reference of about 7 minutes for the same study.
 
 Measured:
 
@@ -252,14 +235,9 @@ and values, `scale=beta`), and scores retrieval as an overlap of at least 0.95
 with the target *and* the target being the nearest stored digit to the signed
 result. The classical comparison is Part 3's recall on the same patterns.
 
-```bash
-.venv/bin/python scripts/modern_scan.py        # -> artifacts/modern/scan.npz, run.json (3.1 s)
-.venv/bin/python scripts/modern_weights.py     # -> evidence/modern-weights.png    (0.2 s)
-.venv/bin/python scripts/modern_beta.py        # -> evidence/modern-beta.png       (1.5 s)
-.venv/bin/python scripts/modern_retrieval.py   # -> evidence/modern-retrieval.png  (0.2 s)
-```
-
-The 100 queries cycle through the stored digits, each with its lower half
+`scripts/modern_scan.py` writes the raw scan into the ignored `artifacts/modern/`
+in about 3 s here, and the three figure scripts listed in the inventory below
+read it. The 100 queries cycle through the stored digits, each with its lower half
 replaced by random spins drawn from `jax.random.key(6608)`; the classical recall
 order uses `jax.random.key(6609)`. Both seeds and the whole run's wall-clock
 time are recorded in `artifacts/modern/run.json`.
@@ -291,32 +269,25 @@ sparse fragment of strokes for all of them.
 
 ## Evidence inventory
 
-Every committed evidence file, beside the exact command that produces it. The
-raw runs those commands read (and, for Part 2, write first) live in the
-git-ignored `artifacts/`.
+Every committed evidence file, beside the exact command that produces it. Three
+run scripts the figures read first, and they write the raw runs into the
+git-ignored `artifacts/`: `scripts/rbm_train.py` (parameters and histories),
+`scripts/hopfield_scan.py` and `scripts/modern_scan.py` (one `scan.npz` and one
+`run.json` each).
 
 | file | produced by |
 | --- | --- |
-| `evidence/mnist.png` | `.venv/bin/python scripts/dataset_figures.py mnist` |
-| `evidence/cifar10.png` | `.venv/bin/python scripts/dataset_figures.py cifar10` |
-| `evidence/rbm-spins.png` | `.venv/bin/python scripts/rbm_spins.py` |
-| `evidence/rbm-training.png` | `.venv/bin/python scripts/rbm_training.py` |
-| `evidence/rbm-generation.png` | `.venv/bin/python scripts/rbm_generation.py` |
-| `evidence/rbm-completion.png` | `.venv/bin/python scripts/rbm_completion.py` |
-| `evidence/hopfield-unstable.png` | `.venv/bin/python scripts/hopfield_unstable.py` |
-| `evidence/hopfield-recall.png` | `.venv/bin/python scripts/hopfield_recall.py` |
-| `evidence/modern-weights.png` | `.venv/bin/python scripts/modern_weights.py` |
-| `evidence/modern-beta.png` | `.venv/bin/python scripts/modern_beta.py` |
-| `evidence/modern-retrieval.png` | `.venv/bin/python scripts/modern_retrieval.py` |
-
-The run scripts that the figures read, and everything they leave behind:
-
-| command | writes |
-| --- | --- |
-| `bash scripts/download_data.sh` | `inputs/` (ignored) |
-| `.venv/bin/python scripts/rbm_train.py` | `artifacts/rbm/{cd1,cd10}-params.npz`, `artifacts/rbm/run.json` |
-| `.venv/bin/python scripts/hopfield_scan.py` | `artifacts/hopfield/scan.npz`, `artifacts/hopfield/run.json` |
-| `.venv/bin/python scripts/modern_scan.py` | `artifacts/modern/scan.npz`, `artifacts/modern/run.json` |
+| `evidence/mnist.png` | `bash scripts/download_data.sh`, then `.venv/bin/python scripts/dataset_figures.py mnist` |
+| `evidence/cifar10.png` | `bash scripts/download_data.sh`, then `.venv/bin/python scripts/dataset_figures.py cifar10` |
+| `evidence/rbm-spins.png` | `.venv/bin/python scripts/rbm_train.py`, then `.venv/bin/python scripts/rbm_spins.py` |
+| `evidence/rbm-training.png` | `.venv/bin/python scripts/rbm_train.py`, then `.venv/bin/python scripts/rbm_training.py` |
+| `evidence/rbm-generation.png` | `.venv/bin/python scripts/rbm_train.py`, then `.venv/bin/python scripts/rbm_generation.py` |
+| `evidence/rbm-completion.png` | `.venv/bin/python scripts/rbm_train.py`, then `.venv/bin/python scripts/rbm_completion.py` |
+| `evidence/hopfield-unstable.png` | `.venv/bin/python scripts/hopfield_scan.py`, then `.venv/bin/python scripts/hopfield_unstable.py` |
+| `evidence/hopfield-recall.png` | `.venv/bin/python scripts/hopfield_scan.py`, then `.venv/bin/python scripts/hopfield_recall.py` |
+| `evidence/modern-weights.png` | `.venv/bin/python scripts/modern_scan.py`, then `.venv/bin/python scripts/modern_weights.py` |
+| `evidence/modern-beta.png` | `.venv/bin/python scripts/modern_scan.py`, then `.venv/bin/python scripts/modern_beta.py` |
+| `evidence/modern-retrieval.png` | `.venv/bin/python scripts/modern_scan.py`, then `.venv/bin/python scripts/modern_retrieval.py` |
 
 The numeric checks are printed by the scripts themselves: the dataset counts,
 shapes, pixel range and class fractions by `dataset_figures.py`; the shared
@@ -327,43 +298,24 @@ the four crossings beside the sheet's values by `hopfield_recall.py`; and the
 attention difference, the weights and the success fractions by
 `modern_weights.py` and `modern_retrieval.py`.
 
-## Script order
-
-| # | command | writes |
-| ---: | --- | --- |
-| 1 | `bash scripts/download_data.sh` | `inputs/` |
-| 2 | `.venv/bin/python scripts/dataset_figures.py mnist` | `evidence/mnist.png` |
-| 3 | `.venv/bin/python scripts/dataset_figures.py cifar10` | `evidence/cifar10.png` |
-| 4 | `.venv/bin/python scripts/rbm_train.py` | `artifacts/rbm/` |
-| 5 | `.venv/bin/python scripts/rbm_spins.py` | `evidence/rbm-spins.png` |
-| 6 | `.venv/bin/python scripts/rbm_training.py` | `evidence/rbm-training.png` |
-| 7 | `.venv/bin/python scripts/rbm_generation.py` | `evidence/rbm-generation.png` |
-| 8 | `.venv/bin/python scripts/rbm_completion.py` | `evidence/rbm-completion.png` |
-| 9 | `.venv/bin/python scripts/hopfield_scan.py` | `artifacts/hopfield/` |
-| 10 | `.venv/bin/python scripts/hopfield_unstable.py` | `evidence/hopfield-unstable.png` |
-| 11 | `.venv/bin/python scripts/hopfield_recall.py` | `evidence/hopfield-recall.png` |
-| 12 | `.venv/bin/python scripts/modern_scan.py` | `artifacts/modern/` |
-| 13 | `.venv/bin/python scripts/modern_weights.py` | `evidence/modern-weights.png` |
-| 14 | `.venv/bin/python scripts/modern_beta.py` | `evidence/modern-beta.png` |
-| 15 | `.venv/bin/python scripts/modern_retrieval.py` | `evidence/modern-retrieval.png` |
-
 ## `make reproduce` and `make test`
 
 `make reproduce` downloads the datasets, runs the three scans (which include
 training both RBMs), and redraws every committed figure. `make test` runs the
-pytest suite, which needs `make data` to have run because the dataset tests read
+pytest suite; it depends on `make data`, because the dataset tests read
 `inputs/`. `make venv` rebuilds the environment.
 
 ```bash
 make venv
 make reproduce      # downloads, all runs and all eleven figures
-make test           # 26 tests
+make test           # downloads if needed, then 27 tests
 ```
 
-Wall-clock for the whole of `make reproduce` on this machine: 2 min 18 s,
-including about 20 s of downloads, the two largest compute items being the 56 s
-CD-10 training and the 40 s Hopfield sweep. The figures are byte-identical
-between runs, so no committed evidence changes when the commands are repeated.
+Wall-clock for the whole of `make reproduce` on this machine: about 2 min 20 s,
+including about 20 s of downloads, the two largest compute items being the
+CD-10 training (about 55 s) and the Hopfield sweep (about 40 s). The figures are
+byte-identical between runs, so no committed evidence changes when the commands
+are repeated.
 
 ## Final verification
 
@@ -456,24 +408,24 @@ tracked:
 git ls-files week6 | grep -E '/inputs/|/artifacts/|\.venv' || echo "no generated path tracked"
 ```
 
-The exercise was committed locally and is **not pushed**, per the session
-instruction; the sheet's "Push the source, environment and evidence" is
-therefore reported as not done.
+The sheet's "Push the source, environment and evidence" is deferred: the
+repository owner asked that this week be committed locally and left for them to
+push. Everything else the wrap-up asks for is done and committed.
 
 ## Regeneration checklist
 
-From a clean clone: `make venv`; `make data` (which appends nothing to
-`README.md`, since the URLs are already there); `make reproduce`, which runs
-`scripts/rbm_train.py`, `scripts/hopfield_scan.py` and `scripts/modern_scan.py`
-into `artifacts/` and then redraws all eleven figures in the order of the script
-table above; `make test`. At that point every tracked file under `week6/`
-exists, `git status` shows only the ignored `inputs/`, `artifacts/` and
-`.venv/`, and every number quoted in this README can be read line by line from
-the printed output of the scripts.
+From a clean clone: `make venv`, then `make reproduce`, which downloads the
+datasets (`make data` appends nothing to `README.md`, since the URLs are already
+there), runs `scripts/rbm_train.py`, `scripts/hopfield_scan.py` and
+`scripts/modern_scan.py` into `artifacts/`, and then redraws all eleven figures
+in the order of the inventory table above; then `make test`. At that point every
+tracked file under `week6/` exists, `git status` shows only the ignored
+`inputs/`, `artifacts/` and `.venv/`, and every number quoted in this README can
+be read line by line from the printed output of the scripts.
 
 This was verified by cloning the repository to a fresh directory and running
 `make venv && make reproduce && make test` there: the tree stayed clean, all
-eleven figures came out byte-identical to the committed ones, and all 26 tests
+eleven figures came out byte-identical to the committed ones, and all 27 tests
 passed.
 
 ## Resolutions of ambiguity

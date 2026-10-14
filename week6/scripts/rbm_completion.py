@@ -280,7 +280,7 @@ def draw_figure(v_test, wrong, frames_by, results) -> None:
     ax2.set_xlabel("Gibbs steps (clamped)", fontsize=8)
     ax2.set_ylabel("ink overlap 2|A n B| / (|A| + |B|)\nwith the true lower half", fontsize=8)
     ax2.tick_params(labelsize=7)
-    ax2.legend(fontsize=7, ncol=1, loc="lower right")
+    ax2.legend(fontsize=7, ncol=1, loc="upper left")
     ax2.set_title("overlap grows when the observation is right, stays flat when wrong",
                   fontsize=8.5)
     fig.savefig("evidence/rbm-completion.png", dpi=160)

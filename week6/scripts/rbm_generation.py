@@ -80,16 +80,10 @@ def main() -> None:
         f"(largest entry difference {same:.1e}) and the same held-out images"
     )
     for step in STEPS:
-        row = frames[("cd10", "gen")][step]
         print(
             f"fresh generation, CD-10, {step:4d} steps: ink fraction "
-            f"{float(jnp.mean(row)):.4f}, connected-component count "
-            f"{sum(components(np.asarray(row[i]).reshape(28, 28)) for i in range(CHAINS))}"
+            f"{float(jnp.mean(frames[('cd10', 'gen')][step])):.4f}"
         )
-    print(
-        "the model's marginal ink fraction is about "
-        f"{float(jnp.mean(load_params('cd10').a > 0)):.2f} of pixels favouring ink"
-    )
 
     rows = [
         ("CD-1 reconstruction\nfrom held-out digits", "cd1", "recon"),
@@ -136,26 +130,6 @@ def main() -> None:
     fig.savefig("evidence/rbm-generation.png", dpi=160)
     plt.close(fig)
     print("wrote evidence/rbm-generation.png")
-
-
-def components(image: np.ndarray) -> int:
-    """Number of 4-connected ink components, a crude speckle measure."""
-    ink = np.asarray(image) >= 0.5
-    seen = np.zeros_like(ink, dtype=bool)
-    total = 0
-    for y in range(28):
-        for x in range(28):
-            if ink[y, x] and not seen[y, x]:
-                total += 1
-                stack = [(y, x)]
-                seen[y, x] = True
-                while stack:
-                    cy, cx = stack.pop()
-                    for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
-                        if 0 <= ny < 28 and 0 <= nx < 28 and ink[ny, nx] and not seen[ny, nx]:
-                            seen[ny, nx] = True
-                            stack.append((ny, nx))
-    return total
 
 
 if __name__ == "__main__":

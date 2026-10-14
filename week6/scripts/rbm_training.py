@@ -51,7 +51,10 @@ def main() -> None:
     ax.axhline(0.0, color="0.8", lw=0.7)
     ax.set_xlabel("epoch (0 = initialization, the star)")
     ax.set_ylabel("CD surrogate  mean(F(v0) - F(stop_gradient(v10)))")
-    recon_ax.set_ylabel("held-out one-step reconstruction error")
+    recon_ax.set_ylabel(
+        "held-out one-step reconstruction error\n(fraction of changed pixels, "
+        "the Hamming fraction)"
+    )
     recon_ax.set_ylim(0, 0.2)
     handles1, labels1 = ax.get_legend_handles_labels()
     handles2, labels2 = recon_ax.get_legend_handles_labels()

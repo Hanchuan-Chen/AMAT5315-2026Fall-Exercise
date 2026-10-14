@@ -30,7 +30,7 @@ reproduce: data
 	$(PY) scripts/modern_beta.py
 	$(PY) scripts/modern_retrieval.py
 
-test:
+test: data
 	$(PY) -m pytest tests
 
 clean:

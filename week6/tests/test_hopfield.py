@@ -37,20 +37,34 @@ def test_a_stored_pattern_has_no_unstable_bits():
     assert fraction == 0.0
 
 
-def test_recall_reaches_a_fixed_point_and_matches_the_dense_form():
+def test_recall_reaches_a_fixed_point():
     x = patterns(50, 5, seed=7)
     starts = x[:, :3].T.copy()
     starts[0, 4] *= -1
     starts[1, 9] *= -1
-    key = jax.random.key(11)
-    final, sweeps = hopfield_lib.recall(x, starts, key)
-    dense, dense_sweeps = hopfield_lib.recall_with_couplings(
-        hopfield_lib.hebbian(x), starts, key
-    )
-    assert np.array_equal(np.asarray(final), np.asarray(dense))
-    assert np.array_equal(np.asarray(sweeps), np.asarray(dense_sweeps))
+    final, sweeps = hopfield_lib.recall(x, starts, jax.random.key(11))
     assert np.all(np.abs(final) == 1)
     assert np.all(np.asarray(sweeps) >= 1)
+    assert np.all(np.asarray(sweeps) < 200)
+    # One more sweep in any order flips nothing, so the state is a fixed point.
+    field = hopfield_lib.hebbian(x) @ np.asarray(final).T
+    assert np.all(field * np.asarray(final).T >= 0)
+
+
+def test_recall_lands_in_a_local_minimum_of_the_energy():
+    x = patterns(60, 6, seed=13)
+    starts = x[:, :4].T.copy()
+    starts[0, [3, 11]] *= -1
+    starts[2, 7] *= -1
+    final, _ = hopfield_lib.recall(x, starts, jax.random.key(12))
+    j = hopfield_lib.hebbian(x)
+    final = np.asarray(final)
+    for state in final:
+        energy = -0.5 * state @ j @ state
+        for i in range(state.size):
+            flipped = state.copy()
+            flipped[i] *= -1
+            assert -0.5 * flipped @ j @ flipped >= energy - 1e-4
 
 
 def test_recall_leaves_a_zero_field_state_unchanged():
@@ -60,8 +74,14 @@ def test_recall_leaves_a_zero_field_state_unchanged():
     assert np.array_equal(np.asarray(final), ties)
 
 
-def test_overlaps_are_one_for_the_patterns_themselves():
-    x = patterns(30, 4, seed=9)
-    gram = hopfield_lib.overlaps(x, x.T)
-    assert np.allclose(np.diag(gram), 1.0)
-    assert np.allclose(gram, (x.T @ x) / 30, atol=1e-6)
+def test_recall_recovers_a_corrupted_pattern_at_low_load():
+    x = patterns(200, 4, seed=9)
+    starts = x.T.copy()
+    starts[0, :20] *= -1
+    final, _ = hopfield_lib.recall(x, starts, jax.random.key(4))
+    final = np.asarray(final)
+    assert final.shape == starts.shape
+    assert np.all(np.abs(final) == 1)
+    overlaps = np.mean(final * x.T, axis=1)
+    assert overlaps[0] > 0.9
+    assert np.all(overlaps[1:] > 0.9)
