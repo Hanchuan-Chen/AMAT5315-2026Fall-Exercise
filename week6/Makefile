@@ -17,6 +17,11 @@ venv:
 reproduce: data
 	$(PY) scripts/dataset_figures.py mnist
 	$(PY) scripts/dataset_figures.py cifar10
+	$(PY) scripts/rbm_train.py
+	$(PY) scripts/rbm_spins.py
+	$(PY) scripts/rbm_training.py
+	$(PY) scripts/rbm_generation.py
+	$(PY) scripts/rbm_completion.py
 
 test:
 	$(PY) -m pytest tests

@@ -89,3 +89,57 @@ cifar10: 5000 train / 1000 test per class, every fraction 0.1000
 MNIST's test split repeats the training split's ordering: digit 1 is most
 common and digit 5 least common in both. CIFAR-10 is exactly balanced, so its
 frequency plot is ten pairs of equal bars at 0.1.
+
+## Part 2: the RBM on MNIST
+
+`rbm.toml` is the sheet's settings block, verbatim. `scripts/rbm_lib.py` holds
+the model: the energy of Eq. 3, the visible free energy of Eq. 4, the block
+Gibbs sampler of Eqs. 6-7, and the CD surrogate of Eq. 10 whose gradient is the
+CD update of Eqs. 8-9 (checked in `tests/test_rbm.py` against the explicit
+`E[v p(h=1|v)]` form). Everything is JAX on CPU with `float32`, the hot loops
+are jitted, and the visible layer is binarized at half intensity.
+
+Training both models writes the raw run into `artifacts/rbm/` (parameters,
+settings record, and the histories of the surrogate and of the held-out
+one-step reconstruction error):
+
+```bash
+.venv/bin/python scripts/rbm_train.py      # -> artifacts/rbm/{cd1,cd10}-params.npz
+                                           #    artifacts/rbm/run.json
+```
+
+Measured, printed by that command and re-read by the figure script:
+
+```text
+cd1:  20 epochs over 60000 images, batch 100, 8.9 s
+      reconstruction error 0.17084 at initialization -> 0.04616 (27.0% of it)
+cd10: 20 epochs, 56.1 s
+      reconstruction error 0.17084 at initialization -> 0.04652 (27.2% of it)
+```
+
+CD-1 and CD-10 share the initialization (seed 6601), the data order (seed
+6602's per-epoch permutation and per-batch Gibbs keys) and the evaluation
+randomness (seed 6606), so they differ only in the chain length. The sheet's
+reference is about 17% -> 4.7% of pixels with 18 s and 105 s of training.
+
+The four evidence figures:
+
+```bash
+.venv/bin/python scripts/rbm_spins.py        # -> evidence/rbm-spins.png
+.venv/bin/python scripts/rbm_training.py     # -> evidence/rbm-training.png
+.venv/bin/python scripts/rbm_generation.py   # -> evidence/rbm-generation.png
+.venv/bin/python scripts/rbm_completion.py   # -> evidence/rbm-completion.png
+```
+
+* `rbm-spins.png`: the first 16 training images binarized, one enlarged spin
+  configuration (ink +1, background -1), and the 784-to-128 coupling diagram.
+* `rbm-training.png`: the CD surrogate and the held-out one-step reconstruction
+  error against epoch; the surrogate rises (it need not decrease) while
+  reconstruction improves.
+* `rbm-generation.png`: two reconstruction chains and two fresh-generation
+  chains per model at 1, 10, 100 and 1000 steps from matched starts, plus the
+  two learning curves. Reconstruction keeps its starting digit; fresh
+  generation develops blobs and rings and rarely a clean digit.
+* `rbm-completion.png`: held-out digits with only the upper half observed, 8
+  chains each, true and wrong clamps, both models, with the ink overlap against
+  steps underneath.
