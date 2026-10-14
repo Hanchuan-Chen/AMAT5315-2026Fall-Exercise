@@ -1,5 +1,5 @@
 """Part 3's classical Hopfield network: Hebbian couplings, zero-temperature
-asynchronous recall, the overlap and the unstable-bit fraction.
+asynchronous recall and the unstable-bit fraction.
 
 ``J_ij = (1/N) sum_mu xi_i^mu xi_j^mu`` with ``J_ii = 0`` (Eq. 12), the local
 field is ``h_i = sum_j J_ij s_j``, and one asynchronous step sets

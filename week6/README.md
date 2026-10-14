@@ -50,7 +50,10 @@ or committed evidence. `inputs/`, `artifacts/` and `.venv/` are ignored by
 | `curl` | /usr/bin/curl (macOS) | Part 1's dataset downloads |
 
 Network access is needed once, for the two dataset downloads. Everything runs
-on CPU.
+on CPU. The environment is deliberately unpinned, with no lock file: weeks 3
+and 4 install with the same `uv pip install` line, so this week follows the
+repository's majority convention, and the versions actually verified here are
+the ones recorded below.
 
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python numpy matplotlib jax pytest
@@ -185,8 +188,8 @@ one-step speckle: isolated-ink fraction 0.143 at 1 step against 0.027 at 1000
 ## Part 3: the classical Hopfield network
 
 `scripts/hopfield_lib.py` holds the Hebbian couplings of Eq. 12 with a zero
-diagonal, the overlap, the unstable-bit fraction `xi_i h_i < 0` over all stored
-patterns, and zero-temperature asynchronous recall `s_i <- sign(h_i)` in a
+diagonal, the unstable-bit fraction `xi_i h_i < 0` over all stored patterns,
+and zero-temperature asynchronous recall `s_i <- sign(h_i)` in a
 fresh random order each sweep, leaving `s_i` unchanged when `h_i = 0` and
 stopping when a whole sweep flips nothing. The fields come from `X (X^T s) / N`
 rather than a materialized `J`, so a sweep costs `O(N P)` per chain;
@@ -300,8 +303,9 @@ attention difference, the weights and the success fractions by
 
 ## `make reproduce` and `make test`
 
-`make reproduce` downloads the datasets, runs the three scans (which include
-training both RBMs), and redraws every committed figure. `make test` runs the
+`make reproduce` fetches the datasets if `inputs/` is missing, runs the three
+scans (which include training both RBMs), and redraws every committed figure.
+`make test` runs the
 pytest suite; it depends on `make data`, because the dataset tests read
 `inputs/`. `make venv` rebuilds the environment.
 

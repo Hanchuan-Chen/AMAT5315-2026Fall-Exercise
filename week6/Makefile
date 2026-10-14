@@ -1,13 +1,17 @@
 # `make reproduce` rebuilds every generated path this week commits from a
-# clean clone: it downloads the datasets into the git-ignored inputs/, trains
+# clean clone: it fetches the datasets into the git-ignored inputs/, trains
 # both RBMs into artifacts/, runs the Hopfield and modern-Hopfield scans, and
-# redraws every figure in evidence/.  `make data` only downloads.
+# redraws every figure in evidence/.  `make data` only fetches them, and does
+# nothing while inputs/ is present, so `make test` never re-downloads.
 
 PY = .venv/bin/python
+MNIST_IMAGES = inputs/mnist/train-images-idx3-ubyte.gz
 
 .PHONY: data venv reproduce test clean
 
-data:
+data: $(MNIST_IMAGES)
+
+$(MNIST_IMAGES):
 	bash scripts/download_data.sh
 
 venv:
