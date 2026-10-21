@@ -59,8 +59,12 @@ def mlp_forward(
     params: dict[str, jax.Array],
     x: jax.Array,
     time: jax.Array,
+    *,
+    flow: bool,
 ) -> jax.Array:
-    features = time_features(time, offset=-1.0)
+    scale = float(load_toml("flow.toml")["model"]["time_scale"]) if flow else 1.0
+    offset = 0.0 if flow else -1.0
+    features = time_features(time, time_scale=scale, offset=offset)
     if features.shape[0] == 1 and x.shape[0] != 1:
         features = jnp.broadcast_to(features, (x.shape[0], features.shape[-1]))
     h = jnp.concatenate([x, features], axis=-1)
@@ -143,7 +147,7 @@ def train_noise(cfg: dict) -> tuple[dict, np.ndarray, dict[str, dict], dict]:
     started = time.perf_counter()
 
     def loss_fn(current, batch_x, levels, eps):
-        prediction = mlp_forward(current, batch_x, levels)
+        prediction = mlp_forward(current, batch_x, levels, flow=False)
         return jnp.mean(jnp.sum((prediction - eps) ** 2, axis=-1)) / 2.0
 
     @jax.jit
@@ -181,6 +185,54 @@ def train_noise(cfg: dict) -> tuple[dict, np.ndarray, dict[str, dict], dict]:
     return params, loss_history, saved, run
 
 
+def train_flow(cfg: dict) -> tuple[dict, np.ndarray, dict]:
+    training = cfg["training"]
+    seed = int(training["seed"])
+    key_init, key_train = jax.random.split(jax.random.key(seed))
+    params = init_mlp(cfg, key_init, flow=True)
+    state = init_adam(params)
+    losses = np.empty((int(training["updates"]),), np.float32)
+    started = time.perf_counter()
+
+    def loss_fn(current, xs, s, target_velocity):
+        prediction = mlp_forward(current, xs, s, flow=True)
+        return jnp.mean(jnp.sum((prediction - target_velocity) ** 2, axis=-1)) / 2.0
+
+    @jax.jit
+    def step(current, adam_state, key, update_index):
+        key_x, key_z, key_s = jax.random.split(key, 3)
+        x0 = sample_target(key_x, int(training["batch_size"]))
+        z = jax.random.normal(
+            key_z, (int(training["batch_size"]), 2), jnp.float32
+        )
+        s = jax.random.uniform(
+            key_s, (int(training["batch_size"]),), minval=0.0, maxval=1.0
+        )
+        xs = (1.0 - s[:, None]) * x0 + s[:, None] * z
+        target = z - x0
+        loss, grads = jax.value_and_grad(loss_fn)(current, xs, s, target)
+        current, adam_state = adam_update(
+            current, adam_state, grads, cosine_lr(cfg, update_index), cfg
+        )
+        return current, adam_state, loss
+
+    for update in range(int(training["updates"])):
+        key_train, subkey = jax.random.split(key_train)
+        params, state, loss = step(params, state, subkey, jnp.array(update))
+        losses[update] = float(loss)
+    run = {
+        "task": "week7 flow matching",
+        "seed": seed,
+        "updates": int(training["updates"]),
+        "batch_size": int(training["batch_size"]),
+        "device": str(jax.devices()[0]),
+        "precision": "float32",
+        "elapsed_seconds": time.perf_counter() - started,
+        "final_loss": float(losses[-1]),
+    }
+    return params, losses, run
+
+
 def _decode_diffusion_params(flat: dict[str, np.ndarray]) -> dict[str, jax.Array]:
     return {name: jnp.asarray(value) for name, value in flat.items()}
 
@@ -201,7 +253,7 @@ def ddpm_sample(
     def run(x0, eps_seq):
         def body(x, step_data):
             t, tp, z = step_data
-            eps = mlp_forward(params, x, t.astype(jnp.float32))
+            eps = mlp_forward(params, x, t.astype(jnp.float32), flow=False)
             ab_t, ab_tp = ALPHA_BARS[t], ALPHA_BARS[tp]
             a = ab_t / ab_tp
             mean = (x - (1.0 - a) / jnp.sqrt(1.0 - ab_t) * eps) / jnp.sqrt(a)
@@ -232,7 +284,7 @@ def ddim_sample(
             eps = (
                 exact_noise(x, t.astype(jnp.float32))
                 if exact
-                else mlp_forward(params, x, t.astype(jnp.float32))
+                else mlp_forward(params, x, t.astype(jnp.float32), flow=False)
             )
             ab_t = ALPHA_BARS[t]
             x0_hat = (x - jnp.sqrt(1.0 - ab_t) * eps) / jnp.sqrt(ab_t)
@@ -263,6 +315,39 @@ def exact_noise(x: jax.Array, level: jax.Array) -> jax.Array:
     return jnp.sum(weights[:, :, None] * component_noise, axis=1)
 
 
+def exact_velocity(x: jax.Array, s: jax.Array) -> jax.Array:
+    s = jnp.asarray(s, jnp.float32)
+    mean = (1.0 - s) * CENTERS[None, :, :]
+    variance = (1.0 - s) ** 2 * 0.09 + s**2
+    centered = x[:, None, :] - mean
+    weights = jax.nn.softmax(-0.5 * jnp.sum(centered**2, -1) / variance, axis=-1)
+    component_x0 = CENTERS[None, :, :] + (
+        0.09 * (1.0 - s) / variance
+    ) * centered
+    component_z = (s / variance) * centered
+    return jnp.sum(weights[:, :, None] * (component_z - component_x0), axis=1)
+
+
+def flow_sample(params: dict[str, jax.Array], x_start: jax.Array, steps: int) -> jax.Array:
+    grid = jnp.linspace(1.0, 0.0, steps + 1, dtype=jnp.float32)
+
+    @jax.jit
+    def run(x0):
+        def body(x, pair):
+            s, sp = pair
+            v = mlp_forward(params, x, s[None].repeat(x.shape[0]), flow=True)
+            return x - (s - sp) * v, None
+
+        x, _ = jax.lax.scan(body, x0, (grid[:-1], grid[1:]))
+        return x
+
+    return run(x_start)
+
+
+def full_grid(steps: int) -> np.ndarray:
+    return np.rint(np.linspace(T, 0, steps + 1)).astype(np.int32)
+
+
 def summarize(samples: np.ndarray) -> dict:
     samples = np.asarray(samples)
     centers = np.asarray(CENTERS)
@@ -284,6 +369,45 @@ def summarize(samples: np.ndarray) -> dict:
         ),
         "max_width_error": float(np.max(np.abs(np.asarray(widths) - 0.3))),
     }
+
+
+def energy_distance(x: np.ndarray, y: np.ndarray, chunk: int = 512) -> float:
+    x = np.asarray(x, np.float64)
+    y = np.asarray(y, np.float64)
+
+    def cross_mean(a: np.ndarray, b: np.ndarray) -> float:
+        total = 0.0
+        for start in range(0, len(a), chunk):
+            block = a[start : start + chunk]
+            distances = np.sqrt(
+                np.maximum(
+                    np.sum(block * block, axis=1)[:, None]
+                    + np.sum(b * b, axis=1)[None, :]
+                    - 2.0 * block @ b.T,
+                    0.0,
+                )
+            )
+            total += float(np.sum(distances))
+        return total / (len(a) * len(b))
+
+    def within_mean(a: np.ndarray) -> float:
+        total = 0.0
+        for start in range(0, len(a), chunk):
+            block = a[start : start + chunk]
+            distances = np.sqrt(
+                np.maximum(
+                    np.sum(block * block, axis=1)[:, None]
+                    + np.sum(a * a, axis=1)[None, :]
+                    - 2.0 * block @ a.T,
+                    0.0,
+                )
+            )
+            if start == 0:
+                np.fill_diagonal(distances, 0.0)
+            total += float(np.sum(distances))
+        return total / (len(a) * (len(a) - 1))
+
+    return 2.0 * cross_mean(x, y) - within_mean(x) - within_mean(y)
 
 
 def save_params(path: Path, params: dict[str, np.ndarray]) -> None:

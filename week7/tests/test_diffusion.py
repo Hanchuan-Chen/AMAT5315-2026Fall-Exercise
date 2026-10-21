@@ -49,7 +49,7 @@ def test_model_shapes_and_initialization():
     assert params["w3"].shape == (128, 2)
     assert np.isclose(float(jnp.std(params["w0"])), 1 / np.sqrt(34), rtol=0.03)
     assert all(float(jnp.max(jnp.abs(params[f"b{i}"]))) == 0.0 for i in range(4))
-    output = mlp_forward(params, jnp.zeros((5, 2)), jnp.ones((5,)))
+    output = mlp_forward(params, jnp.zeros((5, 2)), jnp.ones((5,)), flow=False)
     assert output.shape == (5, 2)
     assert output.dtype == jnp.float32
 
@@ -94,7 +94,7 @@ def test_exact_noise_matches_component_conditional_mean():
     # The exact prediction need not resemble an untrained network.
     assert not np.allclose(
         np.asarray(prediction),
-        np.asarray(mlp_forward(params, x, levels)),
+        np.asarray(mlp_forward(params, x, levels, flow=False)),
     )
 
 
