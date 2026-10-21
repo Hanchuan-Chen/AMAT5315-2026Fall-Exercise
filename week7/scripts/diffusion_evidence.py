@@ -1,6 +1,8 @@
-"""Draw Part 1 evidence from trained checkpoints."""
+"""Draw Part 1 and Part 2 evidence from trained checkpoints."""
 
 from __future__ import annotations
+
+import argparse
 
 import jax
 import jax.numpy as jnp
@@ -10,11 +12,13 @@ from PIL import Image
 
 from diffusion_lib import (
     ALPHAS,
+    ALPHA_BARS,
     BETAS,
     CENTERS,
     ROOT,
     T,
     ddpm_sample,
+    ddim_sample,
     load_params,
     sample_target,
     summarize,
@@ -199,11 +203,132 @@ def final_distribution() -> None:
     )
 
 
+def ddim_comparison() -> None:
+    params = load_params(ART / "checkpoints" / "025000.npz")
+    levels = np.arange(T, -1, -1)
+    key_start = jax.random.key(7012)
+    key_noise_root = jax.random.key(7013)
+    key_noise_a, _, key_target = jax.random.split(key_noise_root, 3)
+    key_noise_b = jax.random.fold_in(key_noise_root, 9)
+    start = jax.random.normal(key_start, (2000, 2), jnp.float32)
+    first = ddim_sample(params, start, levels)
+    second = ddim_sample(params, start, levels)
+    difference = float(jnp.max(jnp.abs(first - second)))
+    assert difference == 0.0
+    ddpm_a = ddpm_sample(params, start, levels, key_noise_a)
+    ddpm_b = ddpm_sample(params, start, levels, key_noise_b)
+    ddim_summary = summarize(np.asarray(first))
+    ddpm_a_summary = summarize(np.asarray(ddpm_a))
+    ddpm_b_summary = summarize(np.asarray(ddpm_b))
+    assert ddim_summary["max_population_error"] <= 0.015
+    assert max(ddim_summary["width"][i][j] for i in range(4) for j in range(2)) <= 0.32
+    assert min(ddim_summary["width"][i][j] for i in range(4) for j in range(2)) >= 0.29
+    for summary in (ddpm_a_summary, ddpm_b_summary):
+        assert max(summary["width"][i][j] for i in range(4) for j in range(2)) <= 0.32
+        assert min(summary["width"][i][j] for i in range(4) for j in range(2)) >= 0.29
+    exact = sample_target(key_target, 2000)
+    cluster_labels = lambda values: np.argmin(
+        np.sum(
+            (np.asarray(values)[:, None, :] - np.asarray(CENTERS)[None, :, :]) ** 2,
+            axis=-1,
+        ),
+        axis=-1,
+    )
+    same_cluster_fraction = float(
+        np.mean(cluster_labels(ddpm_a) == cluster_labels(ddpm_b))
+    )
+    small_start = start[:8]
+    small_paths = np.asarray(ddim_sample(params, small_start, levels, return_path=True)[1])
+    small_paths = np.concatenate([np.asarray(small_start)[None], small_paths], axis=0)
+    ddpm_small_paths_a = np.asarray(
+        ddpm_sample(params, small_start, levels, key_noise_a, return_path=True)[1]
+    )
+    ddpm_small_paths_b = np.asarray(
+        ddpm_sample(params, small_start, levels, key_noise_b, return_path=True)[1]
+    )
+    ddpm_small_paths_a = np.concatenate(
+        [np.asarray(small_start)[None], ddpm_small_paths_a], axis=0
+    )
+    ddpm_small_paths_b = np.concatenate(
+        [np.asarray(small_start)[None], ddpm_small_paths_b], axis=0
+    )
+
+    fig = plt.figure(figsize=(13.2, 7.0), constrained_layout=True)
+    grid = fig.add_gridspec(2, 4)
+    axes = np.empty((2, 4), dtype=object)
+    for row in range(2):
+        for column in range(4):
+            axes[row, column] = fig.add_subplot(grid[row, column])
+    trajectory_left = fig.add_subplot(grid[0, :2])
+    trajectory_right = fig.add_subplot(grid[0, 2:])
+    axes[0, 0].remove()
+    axes[0, 1].remove()
+    axes[0, 2].remove()
+    axes[0, 3].remove()
+
+    for path_ddim, path_a, path_b in zip(
+        np.moveaxis(small_paths, 0, 1),
+        np.moveaxis(ddpm_small_paths_a, 0, 1),
+        np.moveaxis(ddpm_small_paths_b, 0, 1),
+    ):
+        trajectory_left.plot(path_a[:, 0], path_a[:, 1], alpha=0.55)
+        trajectory_left.plot(path_ddim[:, 0], path_ddim[:, 1], alpha=0.45, linestyle=":")
+        trajectory_right.plot(path_b[:, 0], path_b[:, 1], alpha=0.55)
+        trajectory_right.plot(path_ddim[:, 0], path_ddim[:, 1], alpha=0.45, linestyle=":")
+    trajectory_left.set_title("8 shared starts: DDPM draw 1 (solid), DDIM (dotted)")
+    trajectory_right.set_title("8 shared starts: DDPM draw 2 (solid), DDIM (dotted)")
+
+    distributions = (
+        (np.asarray(exact), "exact target"),
+        (np.asarray(first), "DDIM"),
+        (np.asarray(ddpm_a), "DDPM noise draw 1"),
+        (np.asarray(ddpm_b), "DDPM noise draw 2"),
+    )
+    for axis, (values, title) in zip(axes[1], distributions):
+        axis.scatter(values[:, 0], values[:, 1], s=2, alpha=0.25)
+        axis.set_title(title)
+    trajectory_axes = (trajectory_left, trajectory_right)
+    for axis in (*trajectory_axes, *axes[1]):
+        axis.set_xlim(-4.5, 4.5)
+        axis.set_ylim(-4.5, 4.5)
+        axis.set_aspect("equal")
+        axis.grid(alpha=0.15)
+    fig.savefig(EVIDENCE / "ddpm-ddim.png", dpi=180)
+    plt.close(fig)
+    payload = {
+        "ddim_max_repeat_difference": difference,
+        "ddim": ddim_summary,
+        "ddpm_noise_draw_1": ddpm_a_summary,
+        "ddpm_noise_draw_2": ddpm_b_summary,
+        "ddpm_same_cluster_fraction": same_cluster_fraction,
+    }
+    write_json(ART / "ddim-comparison.json", payload)
+    print(
+        f"DDIM repeat max difference: {difference}; "
+        f"DDPM runs agree on a cluster for {same_cluster_fraction:.3f} of starts; "
+        f"DDIM/DDPM errors: {ddim_summary['max_population_error']:.4f}/"
+        f"{ddpm_a_summary['max_population_error']:.4f}/"
+        f"{ddpm_b_summary['max_population_error']:.4f}"
+    )
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "part",
+        nargs="?",
+        choices=("all", "part1", "part2"),
+        default="all",
+        help="draw both mixture tasks or only one task's existing figures",
+    )
+    args = parser.parse_args()
     EVIDENCE.mkdir(exist_ok=True)
-    forward_movie()
-    training_movie()
-    final_distribution()
+    if args.part in ("all", "part1"):
+        forward_movie()
+        training_movie()
+        final_distribution()
+    if args.part in ("all", "part2"):
+        ddim_comparison()
 
 
 if __name__ == "__main__":

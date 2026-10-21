@@ -1,4 +1,4 @@
-"""Focused checks for the Week 7 diffusion implementation."""
+"""Focused checks for the Week 7 diffusion and DDIM implementation."""
 
 from __future__ import annotations
 
@@ -7,10 +7,13 @@ import jax.numpy as jnp
 import numpy as np
 
 from diffusion_lib import (
+    ALPHA_BARS,
     BETAS,
     CENTERS,
     T,
     ddpm_sample,
+    ddim_sample,
+    exact_noise,
     init_mlp,
     load_toml,
     mlp_forward,
@@ -61,6 +64,16 @@ def test_target_and_forward_endpoint():
     assert np.max(np.abs(np.std(x[labels == 0], axis=0) - 0.3)) < 0.015
 
 
+def test_ddim_is_deterministic():
+    cfg = load_toml("diffusion.toml")
+    params = init_mlp(cfg, jax.random.key(2))
+    x = jax.random.normal(jax.random.key(3), (16, 2))
+    levels = np.array([1000, 800, 600, 0])
+    a = ddim_sample(params, x, levels)
+    b = ddim_sample(params, x, levels)
+    assert float(jnp.max(jnp.abs(a - b))) == 0.0
+
+
 def test_ddpm_final_step_is_noiseless():
     cfg = load_toml("diffusion.toml")
     params = init_mlp(cfg, jax.random.key(4))
@@ -68,6 +81,21 @@ def test_ddpm_final_step_is_noiseless():
     a = ddpm_sample(params, x, np.array([1, 0]), jax.random.key(6))
     b = ddpm_sample(params, x, np.array([1, 0]), jax.random.key(7))
     assert np.array_equal(np.asarray(a), np.asarray(b))
+
+
+def test_exact_noise_matches_component_conditional_mean():
+    cfg = load_toml("diffusion.toml")
+    params = init_mlp(cfg, jax.random.key(8))
+    x = sample_target(jax.random.key(9), 4)
+    levels = jnp.full((4,), 500.0)
+    prediction = exact_noise(x, levels)
+    assert prediction.shape == x.shape
+    assert np.all(np.isfinite(np.asarray(prediction)))
+    # The exact prediction need not resemble an untrained network.
+    assert not np.allclose(
+        np.asarray(prediction),
+        np.asarray(mlp_forward(params, x, levels)),
+    )
 
 
 def test_summary_uses_nearest_target_centre():

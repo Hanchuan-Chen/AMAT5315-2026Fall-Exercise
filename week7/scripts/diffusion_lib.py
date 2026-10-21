@@ -215,6 +215,54 @@ def ddpm_sample(
     return run(x_start, noise)
 
 
+def ddim_sample(
+    params: dict[str, jax.Array],
+    x_start: jax.Array,
+    levels: np.ndarray | jax.Array,
+    *,
+    exact: bool = False,
+    return_path: bool = False,
+) -> jax.Array:
+    levels = jnp.asarray(levels, jnp.int32)
+
+    @jax.jit
+    def run(x0):
+        def body(x, pair):
+            t, tp = pair
+            eps = (
+                exact_noise(x, t.astype(jnp.float32))
+                if exact
+                else mlp_forward(params, x, t.astype(jnp.float32))
+            )
+            ab_t = ALPHA_BARS[t]
+            x0_hat = (x - jnp.sqrt(1.0 - ab_t) * eps) / jnp.sqrt(ab_t)
+            ab_tp = ALPHA_BARS[tp]
+            next_x = jnp.sqrt(ab_tp) * x0_hat + jnp.sqrt(1.0 - ab_tp) * eps
+            return next_x, next_x
+
+        x, path = jax.lax.scan(body, x0, (levels[:-1], levels[1:]))
+        return (x, path) if return_path else x
+
+    return run(x_start)
+
+
+def exact_noise(x: jax.Array, level: jax.Array) -> jax.Array:
+    ab = jnp.atleast_1d(ALPHA_BARS[level.astype(jnp.int32)])
+    mean = jnp.sqrt(ab)[:, None, None] * CENTERS[None, :, :]
+    variance = ab * 0.09 + (1.0 - ab)
+    d2 = jnp.sum((x[:, None, :] - mean) ** 2, axis=-1)
+    logits = -0.5 * d2 / variance[:, None]
+    weights = jax.nn.softmax(logits, axis=-1)
+    centers = CENTERS[None, :, :]
+    x0_mean = centers + (
+        jnp.sqrt(ab) * 0.09 / variance
+    )[:, None, None] * (x[:, None, :] - mean)
+    component_noise = (
+        x[:, None, :] - jnp.sqrt(ab)[:, None, None] * x0_mean
+    ) / jnp.sqrt(1.0 - ab)[:, None, None]
+    return jnp.sum(weights[:, :, None] * component_noise, axis=1)
+
+
 def summarize(samples: np.ndarray) -> dict:
     samples = np.asarray(samples)
     centers = np.asarray(CENTERS)
