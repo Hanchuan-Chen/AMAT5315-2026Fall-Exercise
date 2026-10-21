@@ -4,6 +4,11 @@ cd "$(dirname "$0")/.."
 
 mkdir -p ../week6/inputs/cifar10 inputs/cifar-model
 
+if [[ ! -f inputs/images.npz ]]; then
+  curl -fL https://giggleliu.github.io/AMAT5315-2026Fall/downloads/week7-images.npz \
+    -o inputs/images.npz
+fi
+
 if [[ ! -f ../week6/inputs/cifar10/cifar-10-binary.tar.gz ]]; then
   curl -fL \
     https://mindspore-website.obs.cn-north-4.myhuaweicloud.com/notebook/datasets/cifar-10-binary.tar.gz \
