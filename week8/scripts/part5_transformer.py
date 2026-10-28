@@ -432,24 +432,22 @@ def make_figures(
     metrics: dict,
     part2: dict,
 ) -> None:
-    model_names = ["uniform", "unigram", "bigram", "trigram", "4-gram", "transformer"]
+    model_names = ["Uniform", "Unigram", "Bigram", "Trigram", "Transformer"]
     values = [
         part2["models"]["uniform"]["bits_per_char"],
         part2["models"]["1gram"]["bits_per_char"],
         part2["models"]["2gram"]["bits_per_char"],
         part2["models"]["3gram"]["bits_per_char"],
-        part2["models"]["4gram"]["bits_per_char"],
         metrics["evaluation"]["bits_per_char"],
     ]
     fig, ax = plt.subplots(figsize=(8.6, 4.8))
-    colors = ["#b8b8b8"] * 5 + ["#c0392b"]
+    colors = ["#a9a9a9"] * 4 + ["#2878b5"]
     ax.bar(model_names, values, color=colors)
     for x, value in enumerate(values):
         ax.text(x, value + 0.05, f"{value:.3f}", ha="center", fontsize=9)
-    ax.axhline(float(part2["models"]["4gram"]["bits_per_char"]), color="black", ls="--", lw=1)
-    ax.set_ylabel("held-out bits per character")
-    ax.set_title("Count models and the transformer on the same validation stories")
-    ax.grid(axis="y", alpha=0.2)
+    ax.set_ylabel("Held-out bits / character")
+    ax.set_title("Language models in a common unit")
+    ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part5-model-bpc-comparison.png", dpi=180)
     plt.close(fig)
@@ -458,15 +456,18 @@ def make_figures(
     loss = np.asarray(metrics["evaluation"]["position_nats"])
     error = np.asarray(metrics["evaluation"]["position_standard_error"])
     fig, ax = plt.subplots(figsize=(9.2, 5.0))
-    ax.plot(position, loss, color="#c0392b", label="transformer")
-    ax.fill_between(position, loss - 2 * error, loss + 2 * error, color="#c0392b", alpha=0.18)
-    ax.axhline(part2["models"]["2gram"]["nats"], color="#2878b5", ls="--", label="bigram")
-    ax.axhline(part2["models"]["3gram"]["nats"], color="#2a9d8f", ls="--", label="trigram")
-    ax.set_xlabel("tokens read in the window")
-    ax.set_ylabel("mean held-out cross-entropy (nats/token)")
-    ax.set_title("Loss at every position of a 64-token context")
-    ax.grid(alpha=0.2)
-    ax.legend()
+    ax.plot(position, loss, color="#2878b5", label="Transformer, by tokens already read")
+    ax.fill_between(position, loss - 2 * error, loss + 2 * error, color="#2878b5", alpha=0.18)
+    ax.axhline(part2["models"]["2gram"]["nats"], color="#777777", ls="--", lw=1, label="Bigram (reads 1 token): 3.04")
+    ax.axhline(part2["models"]["3gram"]["nats"], color="#e69532", ls="--", lw=1, label="Trigram (reads 2): 2.09")
+    ax.set_xscale("log")
+    ax.set_xticks([1, 2, 4, 8, 16, 32, 64])
+    ax.set_xticklabels([1, 2, 4, 8, 16, 32, 64])
+    ax.set_xlabel("Tokens of context read before predicting")
+    ax.set_ylabel("Held-out loss (nats / token)")
+    ax.set_title("Loss against context length")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part5-position-loss.png", dpi=180)
     plt.close(fig)

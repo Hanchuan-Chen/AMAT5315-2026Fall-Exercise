@@ -39,42 +39,69 @@ def make_figure(
     control: dict[str, np.ndarray],
     output: "ARTIFACTS | None" = None,
 ) -> None:
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5.1), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 6.1), sharey=True)
     for ax, words, name in zip(axes, relations, names):
         pairs = [f"{words[i]}→{words[i + 1]}" for i in range(0, len(words), 2)]
-        xs = np.arange(len(pairs), dtype=np.float64) * 2.4
-        for base, scores, direction, color in (
-            (0.65, found[name], 1.0, "#2878b5"),
-            (-0.65, control[name], -1.0, "#8a8a8a"),
+        for scores, direction, color, mean_color, mean_y in (
+            (found[name], 1.0, "#2878b5", "#2467a4", 0.91),
+            (control[name], -1.0, "#8a8a8a", "#5f5f5f", -0.91),
         ):
             for i, score in enumerate(scores):
                 horizontal, vertical = unit_arrow(score)
                 ax.arrow(
-                    xs[i],
-                    base,
+                    0.0,
+                    0.0,
                     horizontal,
                     direction * vertical,
-                    width=0.006,
-                    head_width=0.045,
-                    head_length=0.08,
+                    width=0.004,
+                    head_width=0.035,
+                    head_length=0.055,
                     length_includes_head=True,
                     color=color,
                     alpha=0.82,
                 )
-            ax.plot([], [], color=color, label=f"mean = {scores.mean():.3f}")
+            if direction > 0:
+                weakest = int(np.argmin(scores))
+                tip = unit_arrow(scores[weakest])
+                ax.annotate(
+                    pairs[weakest],
+                    (tip[0], tip[1]),
+                    xytext=(4, 4),
+                    textcoords="offset points",
+                    fontsize=7,
+                    color=mean_color,
+                )
+            ax.text(
+                0.52,
+                mean_y,
+                f"mean cosine {scores.mean():.2f}",
+                color=mean_color,
+                fontsize=9,
+                fontweight="semibold",
+            )
+        ax.add_patch(plt.Circle((0.0, 0.0), 1.0, fill=False, color="#bdbdbd", lw=0.8))
+        ax.annotate(
+            "",
+            xy=(float(found[name].mean()), 0.0),
+            xytext=(0.0, 0.0),
+            arrowprops={"arrowstyle": "-|>", "color": "black", "lw": 0.9},
+        )
         ax.axhline(0, color="black", lw=1.1)
-        ax.vlines(xs, -0.05, 0.05, color="black", lw=0.7, ls="--", alpha=0.65)
+        ax.axvline(0.0, color="black", lw=0.7, ls="--", alpha=0.65)
+        ax.text(0.02, 0.65, "90° unrelated", rotation=90, fontsize=7, color="#6d6d6d")
+        ax.text(0.52, 0.05, "average of other eight", fontsize=7, color="#4d4d4d")
         ax.set_title(name)
-        ax.set_xticks(xs, pairs, rotation=55, ha="right", fontsize=8)
-        ax.set_xlim(-1.2, xs[-1] + 1.2)
-        ax.set_ylim(-1.8, 1.8)
+        ax.set_xlim(-0.15, 1.08)
+        ax.set_ylim(-1.08, 1.08)
+        ax.set_xticks([0.0, 0.5, 1.0])
+        ax.set_xlabel("cosine")
         ax.set_aspect("equal", adjustable="box")
-        ax.set_yticks([-0.65, 0.65], ["shuffled control", "embedding table"])
-        ax.legend(loc="lower left", fontsize=8, frameon=False)
-        ax.grid(axis="x", alpha=0.12)
-    axes[0].set_ylabel("unit offset projected above/below horizontal")
+        ax.set_yticks([])
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[0].text(-0.1, 0.5, "Pretrained table", rotation=90, ha="right", va="center", color="#2467a4")
+    axes[0].text(-0.1, -0.5, "Row shuffled table", rotation=90, ha="right", va="center", color="#5f5f5f")
     fig.suptitle("Relation offsets and the seed-1730 shuffled control")
-    fig.tight_layout()
+    fig.tight_layout(rect=(0.03, 0.0, 1.0, 0.96))
     EVIDENCE.mkdir(exist_ok=True)
     fig.savefig(EVIDENCE / "part1-embedding-relations.png", dpi=180)
     plt.close(fig)

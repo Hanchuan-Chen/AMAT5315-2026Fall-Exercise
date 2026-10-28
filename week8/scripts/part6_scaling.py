@@ -168,28 +168,38 @@ def figure_runs(
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8))
     budgets = (1e19, 1e20, 1e21)
     colors = ("#2878b5", "#e67e22", "#2a9d8f")
+    colored = np.zeros(len(n), dtype=bool)
     for budget, color in zip(budgets, colors):
         within = np.abs(compute / budget - 1.0) <= 0.15
+        colored |= within
         axes[0].scatter(n[within], loss[within], s=15, color=color, alpha=0.75, label=f"C≈{budget:.0e}")
         n_curve = np.logspace(math.log10(n.min()), math.log10(n.max()), 300)
         d_curve = budget / (6.0 * n_curve)
         axes[0].plot(n_curve, law(fitted, n_curve, d_curve), color=color)
+    axes[0].scatter(
+        n[~colored],
+        loss[~colored],
+        s=7,
+        color="#d3d3d3",
+        alpha=0.8,
+        label="Other budgets",
+    )
     axes[0].set_xscale("log")
-    axes[0].set_xlabel("model parameters N")
-    axes[0].set_ylabel("final loss L")
-    axes[0].set_title("Chinchilla runs and fitted laws at fixed compute")
+    axes[0].set_xlabel("Model size N (parameters)")
+    axes[0].set_ylabel("Final loss L (nats / token)")
     axes[0].legend(fontsize=8)
-    axes[0].grid(alpha=0.2)
     predicted = law(fitted, n, d)
-    scatter = axes[1].scatter(
+    axes[1].scatter(
         predicted, loss, c=np.log10(compute), s=18, cmap="viridis"
     )
     limits = [min(predicted.min(), loss.min()), max(predicted.max(), loss.max())]
     axes[1].plot(limits, limits, color="black", lw=1)
-    axes[1].set_xlabel("fitted loss")
-    axes[1].set_ylabel("measured loss")
-    axes[1].set_title("Measured against fitted loss")
-    fig.colorbar(scatter, ax=axes[1], label="log10 compute")
+    axes[1].set_xlabel("Fitted law (nats / token)")
+    axes[1].set_ylabel("Measured loss (nats / token)")
+    fig.suptitle(
+        f"Refit: E = {fitted[0]:.3g}, A = {fitted[1]:.3g}, "
+        f"B = {fitted[2]:.3g}, α = {fitted[3]:.3f}, β = {fitted[4]:.3f}"
+    )
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part6-loss-and-fit.png", dpi=180)
     plt.close(fig)
@@ -205,23 +215,31 @@ def plot_residuals(
     refit = np.log(law(fitted, n, d)) - np.log(loss)
     paper = np.log(law(printed, n, d)) - np.log(loss)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
-    axes[0].scatter(n, refit, s=13, color="#2878b5", alpha=0.75, label="refit")
-    axes[0].scatter(n, paper, s=13, color="#e67e22", alpha=0.65, label="printed")
+    axes[0].scatter(
+        n, paper, s=13, color="#e67e22", alpha=0.65,
+        label=f"Printed parameters: mean {paper.mean():+.4f}",
+    )
+    axes[0].scatter(
+        n, refit, s=13, color="#2878b5", alpha=0.75,
+        label=f"Refit: mean {refit.mean():+.4f}",
+    )
     axes[0].axhline(0, color="black", lw=0.8)
     axes[0].set_xscale("log")
-    axes[0].set_xlabel("model parameters N")
-    axes[0].set_ylabel("predicted minus measured log loss")
-    axes[0].set_title("Residual against model size")
-    axes[0].legend()
-    axes[0].grid(alpha=0.2)
+    axes[0].set_xlabel("Model size N (parameters)")
+    axes[0].set_ylabel("Predicted - measured log loss")
+    axes[0].legend(fontsize=8, frameon=False)
     bins = np.linspace(min(refit.min(), paper.min()), max(refit.max(), paper.max()), 26)
-    axes[1].hist(refit, bins=bins, alpha=0.55, color="#2878b5", label="refit")
-    axes[1].hist(paper, bins=bins, alpha=0.5, color="#e67e22", label="printed")
+    centers = 0.5 * (bins[:-1] + bins[1:])
+    refit_counts, _ = np.histogram(refit, bins=bins)
+    paper_counts, _ = np.histogram(paper, bins=bins)
+    axes[1].barh(centers, paper_counts, height=np.diff(bins), color="#e67e22", alpha=0.55, label="Printed parameters")
+    axes[1].barh(centers, refit_counts, height=np.diff(bins), color="#2878b5", alpha=0.55, label="Refit")
     axes[1].axvline(0, color="black", lw=0.8)
-    axes[1].set_xlabel("log-loss residual")
-    axes[1].set_ylabel("run count")
-    axes[1].set_title("Residual distributions")
-    axes[1].legend()
+    axes[1].set_xlabel("Runs")
+    axes[1].set_ylabel("")
+    axes[1].set_ylim(axes[0].get_ylim())
+    axes[1].legend(fontsize=8, frameon=False)
+    axes[1].yaxis.tick_right()
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part6-residuals.png", dpi=180)
     plt.close(fig)
@@ -239,25 +257,32 @@ def figure_allocations(
     refit_n, refit_d = optimal(fitted, compute)
     paper_n, paper_d = optimal(printed, compute)
     fig, ax = plt.subplots(figsize=(7.8, 5.2))
-    ax.loglog(compute, refit_n, color="#2878b5", label="refit N*")
-    ax.loglog(compute, refit_d, color="#2a9d8f", label="refit D*")
-    ax.loglog(compute, paper_n, "--", color="#2878b5", alpha=0.7, label="printed N*")
-    ax.loglog(compute, paper_d, "--", color="#2a9d8f", alpha=0.7, label="printed D*")
+    ax.loglog(compute, refit_n, color="#2878b5", label="Parameters N*, refit")
+    ax.loglog(compute, refit_d, color="#2a9d8f", label="Tokens D*, refit")
+    ax.loglog(compute, paper_n, "--", color="#2878b5", alpha=0.7, label="N*, printed parameters")
+    ax.loglog(compute, paper_d, "--", color="#2a9d8f", alpha=0.7, label="D*, printed parameters")
     chinchilla_compute = 6 * chinchilla_n * chinchilla_d
     ax.scatter(
         [chinchilla_compute, chinchilla_compute],
         [chinchilla_n, chinchilla_d],
         marker="*",
-        s=180,
-        color="#c0392b",
+        s=100,
+        color="black",
         zorder=5,
-        label="Chinchilla N* and D*",
+        label="Chinchilla",
     )
-    ax.set_xlabel("training compute C (FLOP)")
-    ax.set_ylabel("compute-optimal N or D")
-    ax.set_title("Compute-optimal allocation")
-    ax.grid(True, which="both", alpha=0.2)
-    ax.legend(fontsize=8)
+    ax.annotate(
+        "Chinchilla: 70 B parameters,\n1.4 T tokens",
+        (chinchilla_compute, chinchilla_d),
+        xytext=(-115, -45),
+        textcoords="offset points",
+        fontsize=8,
+        arrowprops={"arrowstyle": "->", "color": "black", "lw": 0.8},
+    )
+    ax.set_xlabel("Training compute C (FLOP)")
+    ax.set_ylabel("Compute-optimal allocation")
+    ax.grid(True, which="both", alpha=0.12)
+    ax.legend(fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part6-compute-optimal.png", dpi=180)
     plt.close(fig)

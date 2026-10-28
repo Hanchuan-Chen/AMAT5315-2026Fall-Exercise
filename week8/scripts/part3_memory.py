@@ -115,16 +115,16 @@ def plot_curves(raw: dict, output_name: str) -> dict[str, float]:
     memory = np.asarray(settings["memories"], dtype=float)
     d = int(settings["dimensions"][-1])
     colors = {
-        "outer": "#1f4e79",
-        "least_squares": "#2a9d8f",
-        "relu1": "#e9c46a",
-        "relu2": "#f4a261",
-        "relu3": "#e76f51",
+        "outer": "#1f77b4",
+        "least_squares": "#ff7f0e",
+        "relu1": "#2ca02c",
+        "relu2": "#9467bd",
+        "relu3": "#d62728",
     }
     labels = {
-        "outer": "outer product",
-        "least_squares": "least squares",
-        "relu1": r"ReLU$^1$",
+        "outer": "Outer product",
+        "least_squares": "Least squares",
+        "relu1": "ReLU",
         "relu2": r"ReLU$^2$",
         "relu3": r"ReLU$^3$",
     }
@@ -139,7 +139,14 @@ def plot_curves(raw: dict, output_name: str) -> dict[str, float]:
     fig, ax = plt.subplots(figsize=(8.2, 5.2))
     for store in STORE_NAMES:
         ratio = raw[str(d)][store]
-        ax.loglog(memory, np.maximum(ratio, 1e-14), "o-", color=colors[store], label=labels[store])
+        ax.loglog(
+            memory,
+            np.maximum(ratio, 1e-14),
+            "o",
+            markersize=4,
+            color=colors[store],
+            label=labels[store],
+        )
         ax.loglog(memory, predictions[store], "--", color=colors[store], alpha=0.35)
         mask = ratio > 0.1
         if mask.sum() >= 2:
@@ -149,11 +156,12 @@ def plot_curves(raw: dict, output_name: str) -> dict[str, float]:
         else:
             slopes[store] = float("nan")
     ax.axhline(1.0, color="black", lw=0.9)
-    ax.set_xlabel("number of memories M")
-    ax.set_ylabel("interference-to-signal ratio R")
-    ax.set_title(r"Memory recall at d=64 (median of 3 draws)")
-    ax.grid(True, which="both", alpha=0.2)
-    ax.legend(ncol=2, fontsize=9)
+    ax.text(memory[1], 1.15, "R = 1: capacity", fontsize=7)
+    ax.set_xlabel("Stored memories M")
+    ax.set_ylabel("Interference / signal ratio R")
+    ax.set_title("Polynomial memory stores at d = 64")
+    ax.grid(True, which="both", alpha=0.12)
+    ax.legend(ncol=2, fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(EVIDENCE / output_name, dpi=180)
     plt.close(fig)
@@ -164,25 +172,47 @@ def fit_capacity_slopes(capacities: dict, dimensions: list[int]) -> dict[str, fl
     slopes: dict[str, float] = {}
     fig, ax = plt.subplots(figsize=(7.6, 5.0))
     colors = {
-        "outer": "#1f4e79",
-        "least_squares": "#2a9d8f",
-        "relu1": "#e9c46a",
-        "relu2": "#f4a261",
-        "relu3": "#e76f51",
+        "outer": "#1f77b4",
+        "least_squares": "#ff7f0e",
+        "relu1": "#2ca02c",
+        "relu2": "#9467bd",
+        "relu3": "#d62728",
     }
+    labels = {
+        "outer": "Outer product",
+        "least_squares": "Least squares",
+        "relu1": "ReLU",
+        "relu2": r"ReLU$^2$",
+        "relu3": r"ReLU$^3$",
+    }
+    theory = {"outer": 1, "least_squares": 1, "relu1": 1, "relu2": 2, "relu3": 3}
     for store in STORE_NAMES:
         y = np.asarray([capacities[store][str(d)] for d in dimensions], dtype=float)
         valid = np.isfinite(y)
         slopes[store] = float(np.polyfit(np.log(np.asarray(dimensions)[valid]), np.log(y[valid]), 1)[0])
-        ax.loglog(dimensions, y, "o-", color=colors[store], label=store.replace("_", " "))
+        ax.loglog(
+            dimensions,
+            y,
+            "o",
+            color=colors[store],
+            label=f"{labels[store]}: slope {slopes[store]:.2f} (theory {theory[store]})",
+        )
         if valid.sum() >= 2:
-            fit = np.exp(np.polyval(np.polyfit(np.log(np.asarray(dimensions)[valid]), np.log(y[valid]), 1), np.log(dimensions)))
+            fit = np.exp(
+                np.polyval(
+                    np.polyfit(np.log(np.asarray(dimensions)[valid]), np.log(y[valid]), 1),
+                    np.log(dimensions),
+                )
+            )
             ax.loglog(dimensions, fit, "--", color=colors[store], alpha=0.35)
-    ax.set_xlabel("vector dimension d")
-    ax.set_ylabel("capacity M where R = 1")
-    ax.set_title("Capacity exponents")
-    ax.grid(True, which="both", alpha=0.2)
-    ax.legend()
+    ax.set_xlabel("Key dimension d")
+    ax.set_ylabel("Capacity M at R = 1")
+    ax.set_title("Capacity grows like a power of d")
+    ax.set_xticks(dimensions)
+    ax.set_xticklabels([str(value) for value in dimensions])
+    ax.xaxis.set_minor_locator(plt.NullLocator())
+    ax.grid(True, which="both", alpha=0.12)
+    ax.legend(fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part3-capacity-vs-dimension.png", dpi=180)
     plt.close(fig)

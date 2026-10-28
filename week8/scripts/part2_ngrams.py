@@ -226,28 +226,47 @@ def main() -> None:
     bpcs = np.asarray([models[f"{n}gram"]["bits_per_char"] for n in ns])
     unseen = np.asarray([models[f"{n}gram"]["unseen_fraction"] for n in ns], dtype=float)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.3))
-    axes[0].plot(
-        np.r_[0, ns],
-        np.r_[models["uniform"]["bits_per_char"], bpcs],
-        "o-",
-        color="#205493",
+    axes[0].plot(ns, bpcs, "o-", color="#17699a", markersize=5)
+    for n, value in zip(ns, bpcs):
+        axes[0].annotate(
+            f"{value:.2f}",
+            (n, value),
+            xytext=(0, 8),
+            textcoords="offset points",
+            ha="center",
+            fontsize=8,
+        )
+    axes[0].scatter(
+        [4],
+        [bpcs[3]],
+        s=150,
+        facecolors="none",
+        edgecolors="#d39b45",
+        linewidths=1.5,
+        label="Lowest: n = 4",
     )
-    axes[0].set_xlabel("n-gram order n (0 = uniform)")
-    axes[0].set_ylabel("held-out bits per character")
+    axes[0].set_xlabel("n (n-gram order)")
+    axes[0].set_ylabel("Held-out bits / character")
     axes[0].set_title("Held-out loss")
-    axes[0].grid(alpha=0.25)
-    axes[0].annotate(
-        "4-gram minimum",
-        xy=(4, bpcs[3]),
-        xytext=(4.25, bpcs[3] + 0.18),
-        arrowprops={"arrowstyle": "->", "color": "black"},
-    )
-    axes[1].plot(ns, 100 * unseen, "o-", color="#b24c3d")
-    axes[1].set_xlabel("n-gram order n")
-    axes[1].set_ylabel("held-out n-grams unseen (%)")
-    axes[1].set_title("Curse of dimensionality")
-    axes[1].grid(alpha=0.25)
-    fig.suptitle("TinyStories BPE n-gram ladder")
+    axes[0].set_xticks(ns)
+    axes[0].set_ylim(1.0, 3.7)
+    axes[0].legend(frameon=False, loc="lower left", fontsize=8)
+    axes[1].plot(ns, 100 * unseen, "o-", color="#8e689f", markersize=5)
+    for n, value in zip(ns, 100 * unseen):
+        axes[1].annotate(
+            f"{value:.1f}%",
+            (n, value),
+            xytext=(0, 8),
+            textcoords="offset points",
+            ha="center",
+            fontsize=8,
+        )
+    axes[1].set_xlabel("n (n-gram order)")
+    axes[1].set_ylabel("Unseen in training (%)")
+    axes[1].set_title("Unseen held-out n-grams")
+    axes[1].set_xticks(ns)
+    for axis in axes:
+        axis.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
     fig.savefig(EVIDENCE / "part2-ngram-ladder.png", dpi=180)
     plt.close(fig)

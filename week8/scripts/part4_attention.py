@@ -114,18 +114,17 @@ def measure(
 
 
 def make_figure(
-    picture: np.ndarray,
     recalls: dict[str, dict[str, np.ndarray]],
     figure_ratios: dict[str, dict[str, float]],
 ) -> None:
     memories = list(recalls)
     fig, axes = plt.subplots(
-        len(memories), len(STORES) + 1, figsize=(2.55 * (len(STORES) + 1), 2.55 * len(memories))
+        len(memories), len(STORES), figsize=(2.7 * len(STORES), 2.45 * len(memories))
     )
     y, x = np.mgrid[0:32, 0:32]
     flat_y, flat_x = y.ravel(), x.ravel()
     for row, memory in enumerate(memories):
-        panels = [("stored", picture, float("nan"))] + [
+        panels = [
             (store, recalls[memory][store], figure_ratios[memory][store])
             for store in STORES
         ]
@@ -133,29 +132,44 @@ def make_figure(
             ax = axes[row, column]
             flat = image.ravel()
             ink = flat >= 0
-            sizes = np.where(ink, 7.0 + 8.0 * np.minimum(np.abs(flat), 3), 1.1)
-            colors = np.where(ink, "#c0392b" if np.isfinite(ratio) and ratio < 1 else "#2878b5", "#d8d8d8")
+            sizes = np.where(ink, 4.2 + 5.0 * np.minimum(np.abs(flat), 3), 0.7)
+            colors = np.where(
+                ink,
+                "#c0392b" if ratio < 1 else "#5f6b76",
+                "#e6e6e6",
+            )
             ax.scatter(flat_x, flat_y, s=sizes, c=colors, marker="o", linewidths=0)
             ax.set_xlim(-1, 32)
             ax.set_ylim(31, -2)
             ax.set_aspect("equal")
             ax.axis("off")
             if row == 0:
-                ax.set_title(store)
-            if column == 0:
-                ax.text(-0.1, 0.5, f"M={memory}", transform=ax.transAxes, rotation=90, va="center", ha="right")
-            if store != "stored":
-                ax.text(
-                    0.5,
-                    -0.07,
-                    f"R draw 0={ratio:.3g}",
-                    transform=ax.transAxes,
-                    ha="center",
-                    va="top",
-                    fontsize=8,
+                ax.set_title(
+                    {"outer": "Outer product", "relu": "MLP, ReLU", "relu2": "MLP, ReLU$^2$", "softmax": r"Attention, softmax $\beta=8$"}[store],
+                    fontsize=10,
                 )
-    fig.suptitle("Recall of the 32×32 pixel character: dots show recalled pixel sign and magnitude")
-    fig.tight_layout(rect=(0.03, 0.02, 1, 0.96))
+            if column == 0:
+                ax.text(
+                    -0.08,
+                    0.5,
+                    f"M = {memory}",
+                    transform=ax.transAxes,
+                    rotation=90,
+                    va="center",
+                    ha="right",
+                    fontsize=9,
+                )
+            ax.text(
+                0.5,
+                -0.055,
+                f"R = {ratio:.3g}",
+                transform=ax.transAxes,
+                ha="center",
+                va="top",
+                fontsize=8,
+                color="#c0392b" if ratio < 1 else "#444444",
+            )
+    fig.tight_layout(rect=(0.02, 0.01, 1, 1))
     fig.savefig(EVIDENCE / "part4-picture-recall.png", dpi=180)
     plt.close(fig)
 
@@ -164,7 +178,7 @@ def main() -> None:
     settings = load_settings()
     picture = make_picture(str(settings["part4"]["character"]))
     medians, recalls, figure_ratios = measure(settings, picture)
-    make_figure(picture, recalls, figure_ratios)
+    make_figure(recalls, figure_ratios)
     np.savez_compressed(ARTIFACTS / "part4-picture.npz", picture=picture, **{
         f"recall_m{memory}_{store}": image
         for memory, images in recalls.items()
