@@ -1,0 +1,21 @@
+[project]
+name = "amat5315-week8"
+version = "0.1.0"
+description = "Week 8 language-model, attention, and scaling experiments"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=0.30",
+    "jax[cpu]>=0.11",
+    "matplotlib>=3.10",
+    "numpy>=2.0",
+    "pytest>=8",
+    "safetensors>=0.5",
+    "scipy>=1.15",
+    "sentencepiece>=0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+addopts = "-q"
+

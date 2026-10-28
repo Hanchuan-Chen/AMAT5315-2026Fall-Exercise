@@ -1,0 +1,75 @@
+[paths]
+embeddings = "inputs/model.safetensors"
+embedding_tokenizer = "inputs/tokenizer.json"
+stories = "data/TinyStoriesV2-GPT4-valid.txt"
+bpe_model = "data/tok512.model"
+chinchilla = "data/chinchilla-runs.csv"
+token_cache = "artifacts/tokens.npz"
+transformer_checkpoint = "artifacts/transformer.npz"
+
+[part1]
+seed = 1730
+control_shuffles = 20
+relations = [
+  ["iran", "tehran", "turkey", "ankara", "russia", "moscow", "china", "beijing", "france", "paris", "sweden", "stockholm", "japan", "tokyo", "peru", "lima", "kenya", "nairobi"],
+  ["king", "queen", "man", "woman", "he", "she", "brother", "sister", "father", "mother", "son", "daughter", "uncle", "aunt", "boy", "girl", "husband", "wife"],
+  ["big", "bigger", "small", "smaller", "fast", "faster", "dark", "darker", "cold", "colder", "old", "older", "strong", "stronger", "long", "longer", "tall", "taller"],
+]
+relation_names = ["country -> capital", "male -> female", "adjective -> comparative"]
+
+[part2]
+train_fraction = 0.90
+candidate_k = [0.0001, 0.001, 0.01, 0.1, 1.0]
+max_n = 6
+bigram_samples = 250000
+chi2_contexts = 20
+seed = 1848
+
+[part3]
+dimensions = [16, 32, 64]
+memories = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+draws = 3
+query_sample = 256
+embedding_dim = 64
+hidden_dim = 512
+steps = 4000
+batch_size = 16384
+learning_rate = 0.006
+weight_decay = 0.01
+warmup_fraction = 0.05
+seed = 2026
+
+[part4]
+character = "算"
+dimension = 64
+memories = [64, 256, 1024, 4096]
+draws = 20
+softmax_beta = 8.0
+seed = 1730
+
+[part5]
+n_layers = 2
+width = 96
+heads = 4
+context = 64
+steps = 6000
+batch_size = 32
+learning_rate = 0.003
+warmup_steps = 300
+final_lr_fraction = 0.1
+weight_decay = 0.01
+seed = 2026
+sample_seed = 1848
+sampler_samples = 100000
+self_consistency_sequences = 128
+self_consistency_length = 128
+
+[part6]
+drop_highest_loss = 5
+huber_delta = 0.001
+bootstrap = 400
+compute_budget = 5.76e23
+chinchilla_n = 70e9
+chinchilla_d = 1.4e12
+printed = { E = 1.69, A = 406.4, B = 410.7, alpha = 0.34, beta = 0.28 }
+
