@@ -1,0 +1,6 @@
+Coding agent: Codex (GPT-5)
+Rust: rustc 1.96.0 / cargo 1.96.0
+Python: 3.12.14
+uv: 0.12.9
+curl: macOS system curl
+Inputs: downloaded from pinned GitHub revisions; network access required on a fresh run

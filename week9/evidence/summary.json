@@ -1,0 +1,148 @@
+{
+  "numpy_checks": {
+    "a": [
+      [
+        1.0,
+        2.0
+      ],
+      [
+        3.0,
+        4.0
+      ]
+    ],
+    "b": [
+      [
+        2.0,
+        0.0
+      ],
+      [
+        1.0,
+        2.0
+      ]
+    ],
+    "numpy_ab": [
+      [
+        4.0,
+        4.0
+      ],
+      [
+        10.0,
+        8.0
+      ]
+    ],
+    "numpy_trace": 12.0,
+    "numpy_ising_z": 12.602562098951928,
+    "tensor_ab": [
+      [
+        4.0,
+        4.0
+      ],
+      [
+        10.0,
+        8.0
+      ]
+    ],
+    "tensor_trace": 12.0,
+    "tensor_ising_z": 12.602562098951932,
+    "ab_error": 0.0,
+    "trace_error": 0.0,
+    "ising_error": 3.552713678800501e-15,
+    "max_abs_error": 3.552713678800501e-15
+  },
+  "asia": {
+    "prior": {
+      "evidence_mass": 1.0000000000000002,
+      "plan_work": 52,
+      "largest_tensor": 8,
+      "max_marginal_error": 1.1102230246251565e-16,
+      "relative_evidence_error": 2.220446049250313e-16
+    },
+    "AD": {
+      "evidence_mass": 0.004501375000000001,
+      "plan_work": 52,
+      "largest_tensor": 8,
+      "max_marginal_error": 2.220446049250313e-16,
+      "relative_evidence_error": 3.8537635188732494e-16
+    },
+    "ADX": {
+      "evidence_mass": 0.0009882267500000012,
+      "plan_work": 54,
+      "largest_tensor": 8,
+      "max_marginal_error": 1.1102230246251565e-16,
+      "relative_evidence_error": 1.3165425920545113e-15
+    }
+  },
+  "orders": {
+    "random": {
+      "seed": 42,
+      "work": 296,
+      "largest_tensor": 64
+    },
+    "greedy": {
+      "work": 54,
+      "largest_tensor": 8
+    },
+    "analysis_matches_saved": true,
+    "independently_recounted": true
+  },
+  "bp_asia": {
+    "prior": {
+      "converged": true,
+      "sweeps": 54,
+      "residual": 7.025592607678988e-11,
+      "max_marginal_error": 0.003339900003366647
+    },
+    "AD": {
+      "converged": true,
+      "sweeps": 93,
+      "residual": 9.943634804443491e-11,
+      "max_marginal_error": 0.011406961508417926
+    },
+    "ADX": {
+      "converged": true,
+      "sweeps": 94,
+      "residual": 8.22506507347498e-11,
+      "max_marginal_error": 0.010611745265879269
+    }
+  },
+  "promedus": {
+    "greedy_work": 2830998923,
+    "treesa_work": 10387462,
+    "greedy_space": 16777216,
+    "treesa_space": 131072,
+    "work_reduction": 272.54000284188766,
+    "space_reduction": 128.0,
+    "log10_Z_greedy": -7.806746304582448,
+    "log10_Z_treesa": -7.806746304582442,
+    "exact_plan_log10_difference": 5.329070518200751e-15,
+    "exact_plan_marginal_difference": 3.3306690738754696e-16,
+    "published_log10_Z": -7.80675,
+    "published_PR_error": 3.6954175524073207e-06,
+    "published_exact_MAR_values": [
+      0.197588,
+      0.149753,
+      0.617522
+    ],
+    "exact_state1_values": [
+      0.19758825818897482,
+      0.14975343231919042,
+      0.6175220183808904
+    ],
+    "bp_state1_values": [
+      8.561798027058645e-05,
+      0.00025076053643994524,
+      0.999874935816586
+    ],
+    "published_MAR_max_error_exact": 4.3231919041875067e-07,
+    "published_MAR_max_error_bp": 0.382352935816586,
+    "bp_converged": false,
+    "bp_residual": 2.1713575382165118e-10,
+    "bp_sweeps": 1000,
+    "bp_update_work": 2416000,
+    "runtime_seconds": {
+      "promedus-greedy": 1.006941625,
+      "promedus-treesa": 1.834065583,
+      "promedus-bp": 1.514518375
+    }
+  }
+}

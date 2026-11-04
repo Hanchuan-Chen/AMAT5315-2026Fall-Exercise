@@ -1,0 +1,47 @@
+usage       = "infer --model asia.uai --evidence AD --out artifacts/AD"
+description = "infer probabilities from local factors; no unstated defaults"
+
+[args]
+model           = "path to the UAI model data"
+evidence        = "prior: no observations; AD: A=0,D=0; ADX: A=0,D=0,X=0"
+evidence-file   = "optional UAI evidence file; replaces evidence"
+out             = "directory for this run's evidence"
+
+[writes]
+"<out>/run.json" = "observations, evidence mass, node marginals and requested T,L joint"
+stdout = "evidence probability, disease probabilities and discrepancies"
+
+[args.ordering]
+order   = "scalar evidence order: random, greedy, or treesa; default greedy"
+seed    = "random-order or TreeSA seed; required with random or treesa"
+plan    = "replay a saved scalar-query plan; default absent"
+analyze = "analyse a saved plan without contraction; default absent"
+
+[writes.ordering]
+"<out>/order.json"      = "contraction plan, planning method and random seed"
+"<out>/complexity.json" = """
+Work: sum of pair costs, each the product of dimensions in the union of input labels.
+Largest tensor: maximum entry count among all inputs and intermediates.
+Include per-step costs and retained labels for independent recounting.
+"""
+
+[args.treesa]
+trials       = "independent TreeSA trials per restart"
+iterations   = "mutations per temperature"
+restarts     = "seeded independent restarts"
+score        = "time only"
+
+[args.bp]
+method     = "inference method: exact or bp; default exact"
+damping    = "fraction of the proposed message used; required with bp only"
+tolerance  = "maximum undamped residual for stopping; required with bp only"
+max-sweeps = "iteration limit, not a convergence claim; required with bp only"
+
+[writes.bp]
+"<out>/run.json" = """
+Observations, BP settings and final marginals.
+At each sweep: node beliefs, undamped residual and cumulative update work.
+Normalize every message proposal. Compute the maximum absolute undamped message
+change at the same state as the recorded beliefs, including the returned state.
+"""
+stdout = "BP sweep, undamped residual and cumulative update work"
