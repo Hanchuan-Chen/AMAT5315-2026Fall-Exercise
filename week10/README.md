@@ -156,12 +156,12 @@ Periodic small-system checks:
 
 ## Saved evidence
 
-The three required figures are kept locally in `artifacts/`. `data/` contains
+The three required figures are versioned in `artifacts/`. `data/` contains
 the complete g tables with timings, refinement tables, checks, and machine-readable
 summary. `runs/` contains every raw JSON run, including boundary normalization
 scales and truncation diagnostics, each TRG scale/split factor/singular-value
 history, final tensors, settings, `log Z`, g, and solver time. Generated data,
-tensors, figures, virtual environments, and build output are deliberately
+tensors, virtual environments, and build output are deliberately
 ignored by Git.
 
 The analyzer also recomputes `log Z` from the saved boundary cores and closes

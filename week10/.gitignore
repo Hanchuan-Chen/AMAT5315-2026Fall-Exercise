@@ -5,5 +5,4 @@ __pycache__/
 *.pyc
 /data/
 /runs/
-/artifacts/
 

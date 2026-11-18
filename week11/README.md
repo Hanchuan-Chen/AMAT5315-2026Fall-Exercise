@@ -87,4 +87,5 @@ The contracted N-queens counts for N=4 through 10 are `2,10,4,40,92,352,724`, ma
 - `artifacts/factoring.png`: greedy/treesa contraction memory and the N=15 beta-2 energy histogram.
 - `artifacts/nqueens.png`: exact counts against OEIS and the 200 N=6 sample frequencies.
 
-Both generated directories are excluded by `.gitignore`.
+The three evidence figures are versioned in `artifacts/`; `runs/` remains
+excluded by `.gitignore`.
