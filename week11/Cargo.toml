@@ -1,0 +1,16 @@
+[package]
+name = "tnsample"
+version = "0.1.0"
+edition = "2024"
+description = "Week 11 tensor-network contraction and sampling"
+
+[dependencies]
+omeco = "=0.2.6"
+rand = "0.9"
+rand_chacha = "0.9"
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+
