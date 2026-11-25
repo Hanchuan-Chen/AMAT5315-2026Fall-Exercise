@@ -83,9 +83,18 @@ faster than Strong Branching on both sizes.
 
 ## Evidence
 
-`artifacts/` retains all saved runs, `pred` files, `dataset.json`, and
-`model.json` locally. The four tracked figures are generated only by
-`plot_evidence.py` from those saved runs.
+The `pred` inputs and solve logs, trained [model](artifacts/model.json), label
+[dataset](artifacts/bnb_strong/dataset.json), run summaries, and printed output
+are versioned with the figures. They provide the actual Strong Branching labels,
+JAX/Rust probes, node counts, timings, and training history used below:
+
+- [square problem](artifacts/pred/square.json) and [solution](artifacts/pred/square-solve.txt)
+- [100-spin problem](artifacts/pred/r100.json), [solution](artifacts/pred/r100-solve.txt), and [timing](artifacts/pred/r100-time.txt)
+- [gap run](artifacts/gap/run.json), [most-frac run](artifacts/bnb_most/run.json), [Strong Branching run](artifacts/bnb_strong/run.json)
+- [22-spin evaluation](artifacts/eval_test/run.json) and [30-spin transfer](artifacts/eval_transfer/run.json)
+- [training output](artifacts/train-stdout.txt) and saved [model](artifacts/model.json)
+
+The four figures are generated only by `plot_evidence.py` from these saved runs.
 
 ![LP lower bounds, exact ground energies, integrality gaps, and rounding excess](artifacts/gap.png)
 

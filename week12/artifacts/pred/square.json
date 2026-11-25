@@ -1,0 +1,42 @@
+{
+  "data": {
+    "couplings": [
+      1,
+      1,
+      1,
+      -1
+    ],
+    "fields": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "graph": {
+      "edges": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "num_vertices": 4
+    }
+  },
+  "type": "SpinGlass",
+  "variant": {
+    "graph": "SimpleGraph",
+    "weight": "i32"
+  }
+}

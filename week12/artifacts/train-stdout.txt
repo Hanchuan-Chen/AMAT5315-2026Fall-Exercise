@@ -1,0 +1,1 @@
+train_nodes=276 train_instances=36 validation_nodes=84 validation_instances=12 overlap=0 checkpoint=95 validation_ce=1.754824 train_label_accuracy=0.775362 validation_label_accuracy=0.738095

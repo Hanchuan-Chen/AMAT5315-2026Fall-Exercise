@@ -1,0 +1,23 @@
+{
+  "e_min": -180.0,
+  "g0": 2,
+  "log_z": 360.694746901536,
+  "mode": "count",
+  "network": {
+    "edges": 180,
+    "tensors": 180,
+    "variables": 100
+  },
+  "run_parameters": {
+    "beta": 2.0,
+    "input": null,
+    "l": 10,
+    "order": "treesa",
+    "p_af": 0.0
+  },
+  "runtime_ms": 546,
+  "sc": 10.0,
+  "schema_version": 1,
+  "seed": 2026,
+  "tc": 14.77828250999565
+}

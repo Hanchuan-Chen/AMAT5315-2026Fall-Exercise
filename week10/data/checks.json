@@ -1,0 +1,64 @@
+{
+  "analyzer": {
+    "c_curve_quadratic": {
+      "synthetic_function": "g(K)=2+1.5*(K-0.4475)^2",
+      "center_points_match": true,
+      "measured_at_k0": 0.6007687499914854,
+      "expected_at_k0": 0.60076875,
+      "abs_error_at_k0": 8.51452242045525e-12,
+      "max_abs_error": 2.6991298085476956e-11,
+      "matches_expected": true
+    }
+  },
+  "boundary": {
+    "K=0.00": {
+      "exact_g": 0.6931471805599453,
+      "mps_g": 0.6931471805599453,
+      "abs_error": 0.0
+    },
+    "K=0.44": {
+      "exact_g": 0.8542220240137801,
+      "mps_g": 0.8542220240137681,
+      "abs_error": 1.199040866595169e-14
+    },
+    "K=0.70": {
+      "exact_g": 1.1317230403126313,
+      "mps_g": 1.1317230403126315,
+      "abs_error": 2.220446049250313e-16
+    },
+    "specific_heat": {
+      "mps_cV": 0.43939307254350973,
+      "exact_cV": 0.4393969121600853,
+      "abs_error": 3.8396165755738565e-06
+    },
+    "saved_evidence_recontraction": {
+      "saved_log_z": 3837.481617319011,
+      "recomputed_log_z": 3837.481617319011,
+      "abs_error": 0.0
+    }
+  },
+  "trg": {
+    "L=2": {
+      "g": {
+        "exact_g": 1.0943416226313227,
+        "trg_g": 1.094341622631323,
+        "abs_error": 2.220446049250313e-16
+      },
+      "specific_heat": {
+        "trg_cV": 0.40428193751489516,
+        "exact_cV": 0.4042782328079018,
+        "abs_error": 3.7047069933460186e-06
+      }
+    },
+    "L=4": {
+      "exact_g": 0.9690454086698483,
+      "trg_g": 0.9689397693774945,
+      "abs_error": 0.00010563929235385405
+    },
+    "saved_evidence_reclosure": {
+      "saved_log_z": 973837.6577832156,
+      "recomputed_log_z": 973837.6577832156,
+      "abs_error": 0.0
+    }
+  }
+}

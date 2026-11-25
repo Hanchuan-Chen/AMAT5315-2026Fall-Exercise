@@ -1,0 +1,14 @@
+mode	metric	value	runtime_ms
+gap	square_lp_spins	[0.500000, 0.500000, 0.500000, 0.500000]	306.843
+gap	square_integer_spins	[1.000000, 0.000000, 0.000000, 1.000000]	306.853
+gap	square_lp_bound	-4.000000	306.856
+gap	square_exact_energy	-2.000000	306.858
+gap	square_rounded_energy	2.000000	306.860
+gap	diet_quantities	[3.178571, 1.142857]	306.868
+gap	diet_cost	23.071429	306.870
+gap	mean_lp_bound	-52.0	306.874
+gap	mean_exact_energy	-38.25	306.876
+gap	mean_integrality_gap	13.75	306.879
+gap	mean_fractional_spins	22.0	306.881
+gap	suboptimal_roundings	16	306.883
+gap	mean_rounding_excess	34.25	306.885

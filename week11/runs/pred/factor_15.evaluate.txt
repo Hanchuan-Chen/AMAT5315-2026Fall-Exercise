@@ -1,0 +1,11 @@
+{
+  "config": [
+    1,
+    1,
+    1,
+    0,
+    1
+  ],
+  "problem": "Factoring",
+  "result": "Min(0)"
+}

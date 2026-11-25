@@ -1,0 +1,13 @@
+Path (2 steps): Factoring → CircuitSAT → SpinGlass/SimpleGraph/i32
+
+  Step 1: Factoring → CircuitSAT
+    num_variables = O(num_bits_first * num_bits_second)
+    num_assignments = O(num_bits_first * num_bits_second)
+
+  Step 2: CircuitSAT → SpinGlass/SimpleGraph/i32
+    num_spins = O(num_assignments * num_variables)
+    num_interactions = O(num_assignments * num_variables)
+
+  Overall:
+    num_spins = O(num_bits_first^2 * num_bits_second^2)
+    num_interactions = O(num_bits_first^2 * num_bits_second^2)

@@ -1,0 +1,551 @@
+{
+  "circuit": {
+    "ground_state_count": 3,
+    "name": "AND-NOT-SET1",
+    "rows": [
+      {
+        "bits": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "energy": -1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "energy": -5.0,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          0,
+          1,
+          0
+        ],
+        "energy": 9.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "energy": 9.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "energy": -1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "energy": -5.0,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "energy": 1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          1,
+          1
+        ],
+        "energy": 1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "energy": -1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "energy": -5.0,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "energy": 1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0,
+          1,
+          1
+        ],
+        "energy": 1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "energy": 3.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          0,
+          1
+        ],
+        "energy": -1.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "energy": -3.0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "energy": -3.0,
+        "valid": false
+      }
+    ],
+    "variables": [
+      "a",
+      "b",
+      "t",
+      "out"
+    ]
+  },
+  "floors": {
+    "AND": -3,
+    "AND-NOT-SET1": -5,
+    "COPY": -1,
+    "NOT": -1,
+    "OR": -3,
+    "SET0": -1,
+    "SET1": -1,
+    "XOR": -4
+  },
+  "gadgets": {
+    "AND": [
+      {
+        "bits": [
+          0,
+          0,
+          0
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          0,
+          1
+        ],
+        "energy": 9.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          0
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          1,
+          1
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0,
+          0
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          0,
+          1
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          0
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          1
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      }
+    ],
+    "COPY": [
+      {
+        "bits": [
+          0,
+          0
+        ],
+        "energy": -1.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          1
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1
+        ],
+        "energy": -1.0,
+        "helper_w": null,
+        "valid": true
+      }
+    ],
+    "NOT": [
+      {
+        "bits": [
+          0,
+          0
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1
+        ],
+        "energy": -1.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          0
+        ],
+        "energy": -1.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          1
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      }
+    ],
+    "OR": [
+      {
+        "bits": [
+          0,
+          0,
+          0
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          0,
+          1
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          0
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          1
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          0,
+          0
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0,
+          1
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          1,
+          0
+        ],
+        "energy": 9.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          1,
+          1
+        ],
+        "energy": -3.0,
+        "helper_w": null,
+        "valid": true
+      }
+    ],
+    "SET0": [
+      {
+        "bits": [
+          0
+        ],
+        "energy": -1.0,
+        "helper_w": null,
+        "valid": true
+      },
+      {
+        "bits": [
+          1
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      }
+    ],
+    "SET1": [
+      {
+        "bits": [
+          0
+        ],
+        "energy": 1.0,
+        "helper_w": null,
+        "valid": false
+      },
+      {
+        "bits": [
+          1
+        ],
+        "energy": -1.0,
+        "helper_w": null,
+        "valid": true
+      }
+    ],
+    "XOR": [
+      {
+        "bits": [
+          0,
+          0,
+          0
+        ],
+        "energy": -4.0,
+        "helper_w": 0,
+        "valid": true
+      },
+      {
+        "bits": [
+          0,
+          0,
+          1
+        ],
+        "energy": -2.0,
+        "helper_w": 0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          0
+        ],
+        "energy": -2.0,
+        "helper_w": 0,
+        "valid": false
+      },
+      {
+        "bits": [
+          0,
+          1,
+          1
+        ],
+        "energy": -4.0,
+        "helper_w": 0,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          0,
+          0
+        ],
+        "energy": -2.0,
+        "helper_w": 0,
+        "valid": false
+      },
+      {
+        "bits": [
+          1,
+          0,
+          1
+        ],
+        "energy": -4.0,
+        "helper_w": 0,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          1,
+          0
+        ],
+        "energy": -4.0,
+        "helper_w": 1,
+        "valid": true
+      },
+      {
+        "bits": [
+          1,
+          1,
+          1
+        ],
+        "energy": -2.0,
+        "helper_w": 0,
+        "valid": false
+      }
+    ]
+  },
+  "mode": "gadgets",
+  "run_parameters": {
+    "seed": 2026
+  },
+  "runtime_ms": 0,
+  "schema_version": 1,
+  "seed": 2026
+}

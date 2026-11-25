@@ -168,3 +168,8 @@ The analyzer also recomputes `log Z` from the saved boundary cores and closes
 the saved TRG tensor with `sum_{i,j} A[i,j,i,j]`; both independent checks must
 agree with the saved value within `1e-12`.
 
+The presentation tables are versioned with the figures: [boundary g values](data/boundary-g.csv),
+[boundary refinement](data/boundary-refinement.csv), [TRG g values](data/trg-g.csv),
+[TRG refinement](data/trg-refinement.csv), [small-system checks](data/checks.json),
+and the [machine-readable summary](data/summary.json).
+

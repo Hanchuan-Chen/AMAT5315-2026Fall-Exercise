@@ -1,0 +1,765 @@
+{
+  "instances": [
+    {
+      "exact_energy": -54.0,
+      "id": 0,
+      "policies": {
+        "most-frac": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 14.552127,
+          "lp_solves": 51,
+          "nodes": 51,
+          "wall_ms": 14.572834
+        },
+        "neural": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 6,
+              "x": 0.5
+            },
+            {
+              "spin": 0,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.5786269999999999,
+          "lp_ms": 7.3815420000000005,
+          "lp_solves": 25,
+          "nodes": 25,
+          "wall_ms": 7.9715
+        },
+        "root-neural": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 6,
+              "x": 0.5
+            },
+            {
+              "spin": 0,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.05575,
+          "lp_ms": 8.919458000000002,
+          "lp_solves": 33,
+          "nodes": 33,
+          "wall_ms": 8.987917
+        },
+        "strong": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 6,
+              "x": 0.5
+            },
+            {
+              "spin": 0,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 129.719873,
+          "lp_solves": 475,
+          "nodes": 19,
+          "wall_ms": 129.7305
+        }
+      }
+    },
+    {
+      "exact_energy": -50.0,
+      "id": 1,
+      "policies": {
+        "most-frac": {
+          "energy": -50.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 34.544956000000006,
+          "lp_solves": 123,
+          "nodes": 123,
+          "wall_ms": 34.592167
+        },
+        "neural": {
+          "energy": -50.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 14,
+              "x": 0.5
+            },
+            {
+              "spin": 2,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.8490019999999999,
+          "lp_ms": 10.087373,
+          "lp_solves": 35,
+          "nodes": 35,
+          "wall_ms": 10.950542
+        },
+        "root-neural": {
+          "energy": -50.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 14,
+              "x": 0.5
+            },
+            {
+              "spin": 26,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.053792,
+          "lp_ms": 29.349374999999995,
+          "lp_solves": 107,
+          "nodes": 107,
+          "wall_ms": 29.443958
+        },
+        "strong": {
+          "energy": -50.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 14,
+              "x": 0.5
+            },
+            {
+              "spin": 2,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 251.702171,
+          "lp_solves": 915,
+          "nodes": 35,
+          "wall_ms": 251.71975000000003
+        }
+      }
+    },
+    {
+      "exact_energy": -59.0,
+      "id": 2,
+      "policies": {
+        "most-frac": {
+          "energy": -59.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 21.86900399999999,
+          "lp_solves": 77,
+          "nodes": 77,
+          "wall_ms": 21.899749999999997
+        },
+        "neural": {
+          "energy": -59.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 13,
+              "x": 0.5
+            },
+            {
+              "spin": 22,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 1.118248,
+          "lp_ms": 15.263167000000001,
+          "lp_solves": 59,
+          "nodes": 59,
+          "wall_ms": 16.405625
+        },
+        "root-neural": {
+          "energy": -59.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 13,
+              "x": 0.5
+            },
+            {
+              "spin": 22,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.05450000000000001,
+          "lp_ms": 10.815337999999999,
+          "lp_solves": 41,
+          "nodes": 41,
+          "wall_ms": 10.885959
+        },
+        "strong": {
+          "energy": -59.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 13,
+              "x": 0.5
+            },
+            {
+              "spin": 22,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 312.228333,
+          "lp_solves": 1139,
+          "nodes": 51,
+          "wall_ms": 312.254416
+        }
+      }
+    },
+    {
+      "exact_energy": -47.0,
+      "id": 3,
+      "policies": {
+        "most-frac": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 77.06025199999999,
+          "lp_solves": 281,
+          "nodes": 281,
+          "wall_ms": 77.168791
+        },
+        "neural": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 9,
+              "x": 0.5
+            },
+            {
+              "spin": 7,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 1.4430389999999995,
+          "lp_ms": 18.84758399999999,
+          "lp_solves": 69,
+          "nodes": 69,
+          "wall_ms": 20.317083
+        },
+        "root-neural": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 9,
+              "x": 0.5
+            },
+            {
+              "spin": 7,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.055958,
+          "lp_ms": 20.876123999999997,
+          "lp_solves": 81,
+          "nodes": 81,
+          "wall_ms": 20.960959000000003
+        },
+        "strong": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 9,
+              "x": 0.5
+            },
+            {
+              "spin": 7,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 365.00503699999996,
+          "lp_solves": 1357,
+          "nodes": 63,
+          "wall_ms": 365.03745799999996
+        }
+      }
+    },
+    {
+      "exact_energy": -53.0,
+      "id": 4,
+      "policies": {
+        "most-frac": {
+          "energy": -53.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 29.841287999999995,
+          "lp_solves": 111,
+          "nodes": 111,
+          "wall_ms": 29.88325
+        },
+        "neural": {
+          "energy": -53.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 7,
+              "x": 0.5
+            },
+            {
+              "spin": 25,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.204166,
+          "lp_ms": 2.4633329999999996,
+          "lp_solves": 9,
+          "nodes": 9,
+          "wall_ms": 2.6705
+        },
+        "root-neural": {
+          "energy": -53.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 7,
+              "x": 0.5
+            },
+            {
+              "spin": 25,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.052125,
+          "lp_ms": 3.370332,
+          "lp_solves": 13,
+          "nodes": 13,
+          "wall_ms": 3.427458
+        },
+        "strong": {
+          "energy": -53.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 7,
+              "x": 0.5
+            },
+            {
+              "spin": 25,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 63.54412600000001,
+          "lp_solves": 239,
+          "nodes": 9,
+          "wall_ms": 63.548624999999994
+        }
+      }
+    },
+    {
+      "exact_energy": -47.0,
+      "id": 5,
+      "policies": {
+        "most-frac": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 158.18862399999998,
+          "lp_solves": 611,
+          "nodes": 611,
+          "wall_ms": 158.406875
+        },
+        "neural": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 21,
+              "x": 0.5
+            },
+            {
+              "spin": 11,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 1.628957,
+          "lp_ms": 19.114117999999998,
+          "lp_solves": 69,
+          "nodes": 69,
+          "wall_ms": 20.77025
+        },
+        "root-neural": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 21,
+              "x": 0.5
+            },
+            {
+              "spin": 11,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.05450000000000001,
+          "lp_ms": 28.152965000000002,
+          "lp_solves": 109,
+          "nodes": 109,
+          "wall_ms": 28.247333
+        },
+        "strong": {
+          "energy": -47.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 21,
+              "x": 0.5
+            },
+            {
+              "spin": 20,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 416.09896,
+          "lp_solves": 1517,
+          "nodes": 63,
+          "wall_ms": 416.13050000000004
+        }
+      }
+    },
+    {
+      "exact_energy": -54.0,
+      "id": 6,
+      "policies": {
+        "most-frac": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 24.271087,
+          "lp_solves": 89,
+          "nodes": 89,
+          "wall_ms": 24.305666
+        },
+        "neural": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 20,
+              "x": 0.5
+            },
+            {
+              "spin": 15,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.7109610000000001,
+          "lp_ms": 10.042038999999999,
+          "lp_solves": 37,
+          "nodes": 37,
+          "wall_ms": 10.767541
+        },
+        "root-neural": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 20,
+              "x": 0.5
+            },
+            {
+              "spin": 14,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.051791,
+          "lp_ms": 12.967626000000005,
+          "lp_solves": 49,
+          "nodes": 49,
+          "wall_ms": 13.038499999999999
+        },
+        "strong": {
+          "energy": -54.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 7,
+              "x": 0.5
+            },
+            {
+              "spin": 15,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 239.051332,
+          "lp_solves": 849,
+          "nodes": 35,
+          "wall_ms": 239.06954199999998
+        }
+      }
+    },
+    {
+      "exact_energy": -56.0,
+      "id": 7,
+      "policies": {
+        "most-frac": {
+          "energy": -56.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 0,
+              "x": 0.5
+            },
+            {
+              "spin": 1,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 22.077462000000004,
+          "lp_solves": 79,
+          "nodes": 79,
+          "wall_ms": 22.107542000000002
+        },
+        "neural": {
+          "energy": -56.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 4,
+              "x": 0.5
+            },
+            {
+              "spin": 25,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.41725100000000004,
+          "lp_ms": 5.245585,
+          "lp_solves": 19,
+          "nodes": 19,
+          "wall_ms": 5.670292000000001
+        },
+        "root-neural": {
+          "energy": -56.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 4,
+              "x": 0.5
+            },
+            {
+              "spin": 8,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.053417,
+          "lp_ms": 4.6846689999999995,
+          "lp_solves": 17,
+          "nodes": 17,
+          "wall_ms": 4.745125
+        },
+        "strong": {
+          "energy": -56.0,
+          "error": 0.0,
+          "first_splits": [
+            {
+              "spin": 4,
+              "x": 0.5
+            },
+            {
+              "spin": 25,
+              "x": 0.5
+            }
+          ],
+          "inference_ms": 0.0,
+          "lp_ms": 191.08424900000003,
+          "lp_solves": 703,
+          "nodes": 29,
+          "wall_ms": 191.099875
+        }
+      }
+    }
+  ],
+  "largest_highs_error": 0.0,
+  "largest_neural_saving": {
+    "instance": 5,
+    "most_frac": {
+      "energy": -47.0,
+      "error": 0.0,
+      "first_splits": [
+        {
+          "spin": 0,
+          "x": 0.5
+        },
+        {
+          "spin": 1,
+          "x": 0.5
+        }
+      ],
+      "inference_ms": 0.0,
+      "lp_ms": 158.18862399999998,
+      "lp_solves": 611,
+      "nodes": 611,
+      "wall_ms": 158.406875
+    },
+    "neural": {
+      "energy": -47.0,
+      "error": 0.0,
+      "first_splits": [
+        {
+          "spin": 21,
+          "x": 0.5
+        },
+        {
+          "spin": 11,
+          "x": 0.5
+        }
+      ],
+      "inference_ms": 1.628957,
+      "lp_ms": 19.114117999999998,
+      "lp_solves": 69,
+      "nodes": 69,
+      "wall_ms": 20.77025
+    }
+  },
+  "lp_solves_equal_nodes": true,
+  "mode": "eval",
+  "parameters": {
+    "count": 8,
+    "edges": 72,
+    "highs": {
+      "presolve": false,
+      "threads": 1
+    },
+    "model": "artifacts/model.json",
+    "policies": [
+      "most-frac",
+      "neural",
+      "root-neural",
+      "strong"
+    ],
+    "spins": 30
+  },
+  "probe": {
+    "largest_probability_difference": 3.3306690738754696e-16,
+    "probe_count": 6
+  },
+  "schema": "branchopt-run-v1",
+  "seed": 4026,
+  "summary": {
+    "most-frac": {
+      "mean_inference_ms": 0.0,
+      "mean_lp_ms": 47.8006,
+      "mean_lp_solves": 177.75,
+      "mean_nodes": 177.75,
+      "mean_wall_ms": 47.867109375000005
+    },
+    "neural": {
+      "mean_inference_ms": 0.868781375,
+      "mean_lp_ms": 11.055592625,
+      "mean_lp_solves": 40.25,
+      "mean_nodes": 40.25,
+      "mean_wall_ms": 11.940416625
+    },
+    "root-neural": {
+      "mean_inference_ms": 0.053979124999999996,
+      "mean_lp_ms": 14.891985875000003,
+      "mean_lp_solves": 56.25,
+      "mean_nodes": 56.25,
+      "mean_wall_ms": 14.967151125000001
+    },
+    "strong": {
+      "mean_inference_ms": 0.0,
+      "mean_lp_ms": 246.054260125,
+      "mean_lp_solves": 899.25,
+      "mean_nodes": 38.0,
+      "mean_wall_ms": 246.07383325
+    }
+  },
+  "training": {
+    "best_validation_cross_entropy": 1.7548236070833514,
+    "checkpoint_epoch": 95,
+    "overlap": 0,
+    "train_instances": 36,
+    "train_nodes": 276,
+    "validation_instances": 12,
+    "validation_nodes": 84
+  }
+}

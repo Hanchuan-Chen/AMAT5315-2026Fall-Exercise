@@ -1,0 +1,17 @@
+{
+  "count": 92,
+  "mode": "count",
+  "network": {
+    "tensors": 256,
+    "variables": 366
+  },
+  "run_parameters": {
+    "n": 8,
+    "order": "treesa"
+  },
+  "runtime_ms": 157,
+  "sc": 26.0,
+  "schema_version": 1,
+  "seed": 2026,
+  "tc": 37.05426355178788
+}

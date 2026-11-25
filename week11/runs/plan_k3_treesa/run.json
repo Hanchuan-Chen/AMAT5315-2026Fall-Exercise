@@ -1,0 +1,20 @@
+{
+  "mode": "plan",
+  "network": {
+    "edges": 264,
+    "tensors": 396,
+    "variables": 150
+  },
+  "run_parameters": {
+    "input": "runs/pred/scale_3.bundle.json",
+    "l": null,
+    "n": null,
+    "order": "treesa",
+    "p_af": null
+  },
+  "runtime_ms": 1084,
+  "sc": 7.0,
+  "schema_version": 1,
+  "seed": 2026,
+  "tc": 12.53430288245463
+}

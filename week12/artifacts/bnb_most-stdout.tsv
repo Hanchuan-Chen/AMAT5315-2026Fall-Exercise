@@ -1,0 +1,12 @@
+mode	metric	value	runtime_ms
+bnb	policy	most-frac	1452.645
+bnb	mean_nodes	50.875	1452.658
+bnb	mean_lp_solves	50.875	1452.662
+bnb	mean_wall_ms	9.37044270833333	1452.666
+bnb	largest_highs_error	0.0	1452.669
+bnb	tetrahedron_nodes	5	1452.673
+bnb	tetra_node_1	[] fractional -6	1452.677
+bnb	tetra_node_2	[(0, 1)] fractional -4	1452.681
+bnb	tetra_node_3	[(0, 1), (1, 1)] incumbent -3	1452.683
+bnb	tetra_node_4	[(0, 1), (1, 0)] pruned_bound -3	1452.684
+bnb	tetra_node_5	[(0, 0)] pruned_bound -2	1452.686

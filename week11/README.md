@@ -81,7 +81,7 @@ The contracted N-queens counts for N=4 through 10 are `2,10,4,40,92,352,724`, ma
 
 ## Evidence
 
-`runs/` contains the raw JSON for every gadget, count, sample, and plan run, plus all `pred` instances, bundles, and extracted solutions. `artifacts/` contains only the three required figures:
+`runs/` contains the raw JSON for every gadget, count, sample, and plan run, plus all `pred` instances, bundles, and extracted solutions. Key presentation files are [the factor-15 reduction](runs/pred/factor_15.bundle.json), [the 2000-sample ground-state run](runs/sample_f15/run.json), [the N=6 sampled boards](runs/sample_nq6/run.json), and [the gadget energies](runs/gadgets/run.json). `artifacts/` contains only the three required figures:
 
 - `artifacts/gates.png`: gate-row energies and the 16 joined-circuit states.
 - `artifacts/factoring.png`: greedy/treesa contraction memory and the N=15 beta-2 energy histogram.
@@ -93,5 +93,4 @@ The contracted N-queens counts for N=4 through 10 are `2,10,4,40,92,352,724`, ma
 
 ![Exact and sampled N-queens results](artifacts/nqueens.png)
 
-The three evidence figures are versioned in `artifacts/`; `runs/` remains
-excluded by `.gitignore`.
+The three evidence figures and the supporting `runs/` data are versioned.

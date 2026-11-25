@@ -1,0 +1,9 @@
+{
+  "data": {
+    "m": 2,
+    "n": 3,
+    "target": 15
+  },
+  "type": "Factoring",
+  "variant": {}
+}
