@@ -80,9 +80,11 @@ The Python evidence/test workflow independently forms the two matrices with
 sum, then compares against the full-precision tenferro values in `run.json`.
 All three NumPy absolute errors are below `1e-12`.
 
-[AD query tensor diagram](evidence/graphs.svg) ·
-[Disease posteriors](evidence/posteriors.png) ·
-[Joint dependence](evidence/joint.png)
+![AD query tensor diagram](evidence/graphs.svg)
+
+![Disease posteriors](evidence/posteriors.png)
+
+![Joint dependence](evidence/joint.png)
 
 ## Contraction orders
 
@@ -112,7 +114,7 @@ evaluating tensors or running the matrix/Ising checks.
 Greedy uses one `omeco GreedyMethod::default` planning pass. Its saved tree and
 recounted cost, rather than an additional restart search, are the evidence.
 
-[Saved trees and recounted costs](evidence/orders.png)
+![Saved trees and recounted costs](evidence/orders.png)
 
 ## Belief propagation
 
@@ -142,7 +144,7 @@ but marginal error remains about `0.01`. Rust tests also check a nonuniform
 factor tree where correct BP matches exact marginals and including the
 recipient's incoming message fails.
 
-[All three residual/error traces](evidence/bp-traces.png)
+![All three residual/error traces](evidence/bp-traces.png)
 
 ## Promedus_14
 
@@ -190,8 +192,9 @@ the selected query beliefs are strongly inaccurate. Saved runtimes are recorded
 in each `run.json`; the reference run took approximately 1.01 s for greedy,
 1.83 s for TreeSA and 1.51 s for the exact-plus-BP comparison, on this machine.
 
-[Promedus costs, PR/MAR and final BP comparison](evidence/promedus-order-costs.png) ·
-[Promedus residual and per-query error traces](evidence/promedus-bp.png)
+![Promedus costs, PR/MAR and final BP comparison](evidence/promedus-order-costs.png)
+
+![Promedus residual and per-query error traces](evidence/promedus-bp.png)
 
 ## Verification
 

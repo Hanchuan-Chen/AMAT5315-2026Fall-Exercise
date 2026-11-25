@@ -292,6 +292,20 @@ git-ignored `artifacts/`: `scripts/rbm_train.py` (parameters and histories),
 | `evidence/modern-beta.png` | `.venv/bin/python scripts/modern_scan.py`, then `.venv/bin/python scripts/modern_beta.py` |
 | `evidence/modern-retrieval.png` | `.venv/bin/python scripts/modern_scan.py`, then `.venv/bin/python scripts/modern_retrieval.py` |
 
+## Evidence figures
+
+![MNIST inputs](evidence/mnist.png)
+![CIFAR-10 inputs](evidence/cifar10.png)
+![RBM spins and couplings](evidence/rbm-spins.png)
+![RBM training](evidence/rbm-training.png)
+![RBM generation](evidence/rbm-generation.png)
+![RBM completion](evidence/rbm-completion.png)
+![Hopfield instability](evidence/hopfield-unstable.png)
+![Hopfield recall](evidence/hopfield-recall.png)
+![Modern Hopfield weights](evidence/modern-weights.png)
+![Modern Hopfield inverse temperature](evidence/modern-beta.png)
+![Modern Hopfield retrieval](evidence/modern-retrieval.png)
+
 The numeric checks are printed by the scripts themselves: the dataset counts,
 shapes, pixel range and class fractions by `dataset_figures.py`; the shared
 initialization and the error ratio by `rbm_training.py`; the unchanged clamped

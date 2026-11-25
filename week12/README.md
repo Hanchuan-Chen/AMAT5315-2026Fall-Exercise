@@ -2,8 +2,8 @@
 
 This directory implements the required Week 12 spin-glass MILP, LP relaxation,
 exact Branch-and-Bound, Strong Branching labels, JAX imitation model, Rust model
-parity, and 22/30-spin evaluation. `artifacts/` is ignored by Git but retains the
-saved evidence locally.
+parity, and 22/30-spin evaluation. Raw runs and the trained model remain local;
+the four required evidence figures are tracked with this README.
 
 ## Environment
 
@@ -83,6 +83,14 @@ faster than Strong Branching on both sizes.
 
 ## Evidence
 
-`artifacts/` retains all saved runs, `pred` files, `dataset.json`, `model.json`,
-and `gap.png`, `bnb.png`, `neural_bnb.png`, and `eval.png`. The four figures are
-generated only by `plot_evidence.py` from those saved runs.
+`artifacts/` retains all saved runs, `pred` files, `dataset.json`, and
+`model.json` locally. The four tracked figures are generated only by
+`plot_evidence.py` from those saved runs.
+
+![LP lower bounds, exact ground energies, integrality gaps, and rounding excess](artifacts/gap.png)
+
+![Branch-and-bound nodes and LP solves for most-frac and Strong Branching](artifacts/bnb.png)
+
+![Training and validation loss with explored nodes on unseen instances](artifacts/neural_bnb.png)
+
+![Node counts and time breakdown for the 22-spin and 30-spin evaluations](artifacts/eval.png)

@@ -1,6 +1,10 @@
 /target/
 /.venv/
-/artifacts/
+/artifacts/*
+!/artifacts/gap.png
+!/artifacts/bnb.png
+!/artifacts/neural_bnb.png
+!/artifacts/eval.png
 __pycache__/
 .pytest_cache/
 *.pyc
